@@ -1,0 +1,21 @@
+[tmp-n-tensor-spec] model ready after 0s (incl. load)
+{'work': 'translate', 'temp': 0.0, 'rep': 0, 'tokens': 300, 'tps': 29.621293251793873, 'draft_n': 290, 'draft_acc': 202, 'wall': 10.92}
+{'work': 'toolcall', 'temp': 0.0, 'rep': 0, 'tokens': 85, 'tps': 62.94308371654931, 'draft_n': 66, 'draft_acc': 63, 'wall': 2.15}
+{'work': 'code', 'temp': 0.0, 'rep': 0, 'tokens': 300, 'tps': 54.182361883451385, 'draft_n': 258, 'draft_acc': 212, 'wall': 6.77}
+{'work': 'prose', 'temp': 0.0, 'rep': 0, 'tokens': 300, 'tps': 38.047978373478195, 'draft_n': 407, 'draft_acc': 163, 'wall': 8.15}
+{'work': 'translate', 'temp': 1.0, 'rep': 0, 'tokens': 186, 'tps': 44.892724587987914, 'draft_n': 201, 'draft_acc': 118, 'wall': 4.38}
+{'work': 'toolcall', 'temp': 1.0, 'rep': 0, 'tokens': 93, 'tps': 54.23460238372867, 'draft_n': 81, 'draft_acc': 65, 'wall': 1.92}
+{'work': 'code', 'temp': 1.0, 'rep': 0, 'tokens': 300, 'tps': 51.35967437622902, 'draft_n': 280, 'draft_acc': 205, 'wall': 6.14}
+{'work': 'prose', 'temp': 1.0, 'rep': 0, 'tokens': 300, 'tps': 34.41486160333891, 'draft_n': 430, 'draft_acc': 155, 'wall': 8.98}
+
+=== SUMMARY tmp-n-tensor-spec
+work       temp   tok/s  accept
+translate   0.0    29.6    0.70
+toolcall    0.0    62.9    0.95
+code        0.0    54.2    0.82
+prose       0.0    38.0    0.40
+translate   1.0    44.9    0.59
+toolcall    1.0    54.2    0.80
+code        1.0    51.4    0.73
+prose       1.0    34.4    0.36
+ALL                46.2

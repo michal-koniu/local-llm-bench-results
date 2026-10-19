@@ -1,0 +1,50 @@
+[
+ {
+  "N": 1,
+  "rnd": 0,
+  "per_stream_tps": 23.1,
+  "aggregate_tps": 21.7,
+  "accept": null,
+  "wall": 9.4
+ },
+ {
+  "N": 1,
+  "rnd": 1,
+  "per_stream_tps": 23.1,
+  "aggregate_tps": 22.9,
+  "accept": null,
+  "wall": 8.9
+ },
+ {
+  "N": 2,
+  "rnd": 0,
+  "per_stream_tps": 19.3,
+  "aggregate_tps": 37.9,
+  "accept": null,
+  "wall": 15.8
+ },
+ {
+  "N": 2,
+  "rnd": 1,
+  "per_stream_tps": 19.3,
+  "aggregate_tps": 38.3,
+  "accept": null,
+  "wall": 15.7
+ },
+ {
+  "N": 4,
+  "rnd": 0,
+  "per_stream_tps": 13.9,
+  "aggregate_tps": 50.5,
+  "accept": null,
+  "wall": 21.9
+ },
+ {
+  "N": 4,
+  "rnd": 1,
+  "per_stream_tps": 13.9,
+  "aggregate_tps": 50.9,
+  "accept": null,
+  "wall": 21.6
+ }
+]

@@ -1,0 +1,11 @@
+candidate loaded; VRAM free [1.08, 1.7, 1.7, 1.7]
+PREFILL candidate (tokens, tok/s): [(6244, 694), (6243, 735)]
+CONC candidate (N, per-stream tok/s, aggregate tok/s): [(1, 49.7, 46.5), (2, 34.5, 63.1), (4, 32.9, 60.0)]
+VRAM free after use: [0.82, 1.43, 1.43, 1.43]
+IDENTICAL to nospec at temp 0: [False, False, False, False]
+  prompt 0: first diff at char 4/909 | cand: '1.  The user wants a translation from Polish' | nospec: '1.  **Analyze the Request**:\n    *   Input t'
+  prompt 1: first diff at char 210/915 | cand: "if n is prime. We'll include examples in docstring. Ens" | nospec: 'if n is prime. Typically for n <= 1 return False. For n'
+  prompt 2: first diff at char 592/1026 | cand: 'dary: TCP is a stream, UDP is datagram-based.\n\n3.  **Se' | nospec: 'dary: TCP is a byte stream, UDP is datagram-based.\n\n3. '
+  prompt 3: first diff at char 0/751 | cand: "1.  **Understand the User's Request**: T" | nospec: 'We need answer simple. Need show calcula'
+ANSWERS cand (final content): ['Quantization reduces the number of bytes read at each generation step, so the model runs faster, and', 'def is_prime(n):\n    """\n    Return True if n is prime, False otherwise.\n\n    >>> is_prime(2)\n    Tr', '- **Connection:** TCP is connection-oriented (requires a handshake), while UDP is', '']
+config restored

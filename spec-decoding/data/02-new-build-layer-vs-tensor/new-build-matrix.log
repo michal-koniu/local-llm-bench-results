@@ -1,0 +1,53 @@
+### tmp-n-layer-nospec: loaded in 32s, VRAM free per card [4.96, 7.21, 6.48, 4.79]
+=== SUMMARY tmp-n-layer-nospec
+work       temp   tok/s  accept
+translate   0.0    24.1     nan
+toolcall    0.0    24.0     nan
+code        0.0    24.2     nan
+prose       0.0    25.7     nan
+translate   1.0    25.8     nan
+toolcall    1.0    25.8     nan
+code        1.0    25.8     nan
+prose       1.0    25.9     nan
+ALL                25.2
+
+### tmp-n-layer-spec: loaded in 35s, VRAM free per card [0.92, 2.74, 2.01, 2.13]
+=== SUMMARY tmp-n-layer-spec
+work       temp   tok/s  accept
+translate   0.0    39.8    0.65
+toolcall    0.0    50.3    0.94
+code        0.0    44.1    0.75
+prose       0.0    31.3    0.49
+translate   1.0    32.6    0.55
+toolcall    1.0    47.7    0.99
+code        1.0    32.4    0.55
+prose       1.0    25.2    0.34
+ALL                37.9
+
+### tmp-n-tensor-nospec: loaded in 98s, VRAM free per card [3.96, 5.08, 5.08, 5.08]
+=== SUMMARY tmp-n-tensor-nospec
+work       temp   tok/s  accept
+translate   0.0    29.4     nan
+toolcall    0.0    28.8     nan
+code        0.0    29.5     nan
+prose       0.0    29.5     nan
+translate   1.0    28.8     nan
+toolcall    1.0    28.8     nan
+code        1.0    29.0     nan
+prose       1.0    29.0     nan
+ALL                29.1
+
+### tmp-n-tensor-spec: loaded in 108s, VRAM free per card [0.35, 1.5, 1.5, 1.5]
+=== SUMMARY tmp-n-tensor-spec
+work       temp   tok/s  accept
+translate   0.0    29.6    0.70
+toolcall    0.0    62.9    0.95
+code        0.0    54.2    0.82
+prose       0.0    38.0    0.40
+translate   1.0    44.9    0.59
+toolcall    1.0    54.2    0.80
+code        1.0    51.4    0.73
+prose       1.0    34.4    0.36
+ALL                46.2
+
+config restored

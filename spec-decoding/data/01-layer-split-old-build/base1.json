@@ -1,0 +1,162 @@
+[
+ {
+  "work": "translate",
+  "temp": 0.0,
+  "rep": 0,
+  "tokens": 300,
+  "tps": 23.511660761491584,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 13.32
+ },
+ {
+  "work": "translate",
+  "temp": 0.0,
+  "rep": 1,
+  "tokens": 300,
+  "tps": 23.420476828375527,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 12.87
+ },
+ {
+  "work": "toolcall",
+  "temp": 0.0,
+  "rep": 0,
+  "tokens": 85,
+  "tps": 23.31894036514129,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 4.65
+ },
+ {
+  "work": "toolcall",
+  "temp": 0.0,
+  "rep": 1,
+  "tokens": 85,
+  "tps": 23.478961592611505,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 3.67
+ },
+ {
+  "work": "code",
+  "temp": 0.0,
+  "rep": 0,
+  "tokens": 300,
+  "tps": 23.459103681784715,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 13.07
+ },
+ {
+  "work": "code",
+  "temp": 0.0,
+  "rep": 1,
+  "tokens": 300,
+  "tps": 23.47241669176148,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 12.84
+ },
+ {
+  "work": "prose",
+  "temp": 0.0,
+  "rep": 0,
+  "tokens": 300,
+  "tps": 23.48814508540808,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 13.0
+ },
+ {
+  "work": "prose",
+  "temp": 0.0,
+  "rep": 1,
+  "tokens": 300,
+  "tps": 23.488752147865704,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 12.83
+ },
+ {
+  "work": "translate",
+  "temp": 1.0,
+  "rep": 0,
+  "tokens": 235,
+  "tps": 23.458413796193902,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 10.09
+ },
+ {
+  "work": "translate",
+  "temp": 1.0,
+  "rep": 1,
+  "tokens": 248,
+  "tps": 23.46342360988477,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 10.63
+ },
+ {
+  "work": "toolcall",
+  "temp": 1.0,
+  "rep": 0,
+  "tokens": 103,
+  "tps": 23.50223374906942,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 4.46
+ },
+ {
+  "work": "toolcall",
+  "temp": 1.0,
+  "rep": 1,
+  "tokens": 83,
+  "tps": 23.48642184076836,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 3.58
+ },
+ {
+  "work": "code",
+  "temp": 1.0,
+  "rep": 0,
+  "tokens": 300,
+  "tps": 23.50149662875354,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 13.04
+ },
+ {
+  "work": "code",
+  "temp": 1.0,
+  "rep": 1,
+  "tokens": 300,
+  "tps": 23.544345262468266,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 12.8
+ },
+ {
+  "work": "prose",
+  "temp": 1.0,
+  "rep": 0,
+  "tokens": 300,
+  "tps": 23.51858664463628,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 12.99
+ },
+ {
+  "work": "prose",
+  "temp": 1.0,
+  "rep": 1,
+  "tokens": 300,
+  "tps": 23.51339323665161,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 12.82
+ }
+]

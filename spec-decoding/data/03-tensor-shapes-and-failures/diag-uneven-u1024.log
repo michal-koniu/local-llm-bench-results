@@ -1,0 +1,6 @@
+0.00.043.032 W server tools or MCP servers are enabled, using localhost as default CORS origin (change via --cors-origins)
+0.00.043.113 I srv  llama_server: initializing ...
+0.00.043.121 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.043.382 W srv  llama_server: security: MCP proxy (experimental), server tools (experimental) enabled - do not expose to untrusted environments
+0.00.044.836 I srv    load_model: loading model '~/models/DeepSeek-V4-Flash-0731-GGUF/UD-IQ3_XXS/DeepSeek-V4-Flash-0731-UD-IQ3_XXS-00001-of-00004.gguf'
+0.00.044.905 W common_fit_params: failed to fit params to free device memory: llama_params_fit is not implemented for SPLIT_MODE_TENSOR, abort

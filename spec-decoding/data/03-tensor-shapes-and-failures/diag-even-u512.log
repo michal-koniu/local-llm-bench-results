@@ -1,0 +1,29 @@
+0.00.040.106 W server tools or MCP servers are enabled, using localhost as default CORS origin (change via --cors-origins)
+0.00.040.183 I srv  llama_server: initializing ...
+0.00.040.192 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.040.463 W srv  llama_server: security: MCP proxy (experimental), server tools (experimental) enabled - do not expose to untrusted environments
+0.00.041.935 I srv    load_model: loading model '~/models/DeepSeek-V4-Flash-0731-GGUF/UD-IQ3_XXS/DeepSeek-V4-Flash-0731-UD-IQ3_XXS-00001-of-00004.gguf'
+0.00.042.002 W common_fit_params: failed to fit params to free device memory: llama_params_fit is not implemented for SPLIT_MODE_TENSOR, abort
+1.34.761.623 W internal AllReduce init failed (n_devices != 2?); falling back to meta-backend butterfly
+1.34.822.585 I cmn          init: llama threadpool init, n_threads = 8
+1.35.116.812 I common_speculative_init_result: loading draft model '~/models/DeepSeek-V4-Flash-0731-GGUF/DSpark/DeepSeek-V4-Flash-0731-DSpark.gguf'
+1.46.133.552 W internal AllReduce init failed (n_devices != 2?); falling back to meta-backend butterfly
+1.46.151.364 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 131072, kv_unified = 'false'
+1.46.151.385 I common_speculative_impl_draft_dflash: adding speculative implementation 'draft-dspark'
+1.46.151.385 I common_speculative_impl_draft_dflash: - n_max=3, n_min=0, p_min=0.00
+1.46.151.386 I common_speculative_impl_draft_dflash: - block_size=5, mask_token_id=128799, n_extract=3, sample_from_anchor=true
+1.46.151.412 W set_sampler: backend sampling not supported with SPLIT_MODE_TENSOR; using CPU
+1.46.151.413 W spec common_specu: backend offload failed for seq_id=0; using CPU sampler
+1.46.175.024 I srv  llama_server: model loaded
+1.46.175.028 I srv  llama_server: listening on http://127.0.0.1:5990
+1.48.240.965 I slot get_availabl: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = -1
+1.48.241.032 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+1.52.128.115 I slot print_timing: id  0 | task 0 | n_gen =    164, tg =  53.82 t/s, tg_3s =  54.15 t/s
+1.52.932.819 I slot print_timing: id  0 | task 0 | prompt eval time =     858.55 ms /    23 tokens (   37.33 ms per token,    26.79 tokens per second)
+1.52.932.821 I slot print_timing: id  0 | task 0 |        eval time =    3833.11 ms /   200 tokens (   19.26 ms per token,    51.92 tokens per second)
+1.52.932.822 I slot print_timing: id  0 | task 0 |       total time =    4691.67 ms /   223 tokens
+1.52.932.825 I slot print_timing: id  0 | task 0 |    graphs reused =         64
+1.52.932.825 I slot print_timing: id  0 | task 0 |   graph reallocs =          0    /     0        (same size) / (changed size)
+1.52.932.828 I slot print_timing: id  0 | task 0 | draft acceptance = 0.67857 (  133 accepted /   196 generated), mean len =  3.02
+1.52.932.864 I slot      release: id  0 | task 0 | stop processing: n_tokens = 222, truncated = 0
+1.52.935.749 I srv    operator(): operator(): cleaning up before exit...

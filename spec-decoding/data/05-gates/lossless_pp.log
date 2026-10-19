@@ -1,0 +1,10 @@
+deepseek-v4-flash-0731-nospec prefill [(6255, 953.0), (6254, 970.0)] free [4.17, 6.3, 5.6, 3.78] tps [23.2, 23.2, 23.2, 23.2]
+tmp-s1024 prefill [(6247, 523.0), (6246, 542.0)] free [0.15, 1.78, 1.08, 1.02] tps [40.4, 37.7, 32.7, 40.2]
+tmp-s512 prefill [(6246, 484.0), (6245, 498.0)] free [0.83, 3.03, 2.32, 3.07] tps [40.7, 37.9, 33.0, 40.5]
+IDENTICAL to nospec at temp 0 (per prompt): tmp-s1024 [True, True, False, False]
+   prompt 2 first difference at char 77 of 1020 | nospec: '\n    *   Task: List *three* differences.\n    *   Format: Sho' | spec: '\n    *   Task: List three differences.\n    *   Format: Short'
+   prompt 3 first difference at char 15 of 153 | nospec: '' | spec: ''
+IDENTICAL to nospec at temp 0 (per prompt): tmp-s512 [True, True, False, False]
+   prompt 2 first difference at char 77 of 1020 | nospec: '\n    *   Task: List *three* differences.\n    *   Format: Sho' | spec: '\n    *   Task: List three differences.\n    *   Format: Short'
+   prompt 3 first difference at char 15 of 153 | nospec: '' | spec: ''
+config restored

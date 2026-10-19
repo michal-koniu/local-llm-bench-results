@@ -1,0 +1,5 @@
+tmp-u512 ('0.97,1,0.92,1.11', '--spec-draft-type-k q8_0 --spec-draft-type-v q8_0 --ubatch-size 512', 524288, 4) OK tps 28.3 load 36s FREE GB per card: [0.97, 3.17, 2.46, 3.22]
+tmp-u768 ('0.97,1,0.92,1.11', '--spec-draft-type-k q8_0 --spec-draft-type-v q8_0 --ubatch-size 768', 524288, 4) OK tps 28.4 load 36s FREE GB per card: [0.52, 2.54, 1.84, 2.2]
+tmp-par2 ('0.97,1,0.92,1.11', '--spec-draft-type-k q8_0 --spec-draft-type-v q8_0', 262144, 2) OK tps 31.1 load 36s FREE GB per card: [0.59, 2.35, 1.64, 1.75]
+tmp-par2u512 ('0.97,1,0.92,1.11', '--spec-draft-type-k q8_0 --spec-draft-type-v q8_0 --ubatch-size 512', 262144, 2) OK tps 28.5 load 36s FREE GB per card: [1.47, 3.72, 3.0, 3.84]
+config restored
