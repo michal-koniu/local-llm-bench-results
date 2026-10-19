@@ -46,6 +46,8 @@ perf/                       local-llm-perf-bench output ($LLM_PERF_RESULTS)
   configs/                    the rig's tuned multi-GPU configs (tensor splits for 2, 3 and 4 cards)
 serving/llama-swap.yaml     how the models are served (flags, context, ubatch, chat templates)
 PARALLEL.md                 several agents sharing one model at once: speed per agent and in total
+SPEC-DECODING.md            speculative decoding and tensor split: how much faster one agent gets, and what it costs
+spec-decoding/data/         the raw per-request results and logs behind SPEC-DECODING.md
 orchestrator/               a small model on the CPU that runs the benchmarks of the big ones
 hardware.md                 the machine
 COMMIT-MAP.md               tool commits as recorded in runs -> the same commits on GitHub

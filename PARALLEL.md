@@ -9,6 +9,9 @@ and the models' own serving flags ([serving/llama-swap.yaml](serving/llama-swap.
 **different** prompt (nothing shared), and all agents start at the same moment. One "turn" means reading the
 context and then writing 512 tokens.
 
+> **Update 2026-10-19.** The DeepSeek tables below describe the configuration of 2026-10-11 (4 slots, layer split, no draft). DeepSeek is now served with a speculative-decoding
+> draft and tensor split on 2 slots; one agent runs at ~50 tok/s and two agents at ~63 tok/s combined. See [SPEC-DECODING.md](SPEC-DECODING.md).
+
 ## DeepSeek-V4-Flash-0731 (UD-IQ3_XXS, 4 GPUs, served with `--parallel 4`)
 
 **Typical agent turn: 4,096 tokens of context in, 512 out**

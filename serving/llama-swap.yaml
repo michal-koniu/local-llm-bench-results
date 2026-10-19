@@ -1,7 +1,7 @@
 # Current llama-swap config of the reference rig (comments removed, home directory shown as ~).
-# The exact command of every run is in its manifest.json (server.llama_swap.cmd). Until 2026-10-11
-# DeepSeek-V4-Flash-0731 was served with --parallel 1; since then with --parallel 4 (4 agents at once,
-# single-agent speed unchanged, see PARALLEL.md).
+# The exact command of every run is in its manifest.json (server.llama_swap.cmd). DeepSeek-V4-Flash-0731 was served with --parallel 1 until 2026-10-11, with --parallel 4 until 2026-10-19,
+# and since then with a speculative-decoding draft and --split-mode tensor on 2 slots (see SPEC-DECODING.md); the previous layouts remain as ...-layerspec and ...-nospec.
+# Entries with an explicit llama-server path use llama.cpp 0ce8cd1; the `server` macro still points at the older build 680a036.
 # One model in VRAM at a time; each entry launches llama.cpp llama-server with the flags below.
 # HIP_VISIBLE_DEVICES picks the GPUs; --tensor-split balances layers across them.
 # --agent enables llama-server built-in tools for the web UI only; the benches use /v1/chat/completions,
@@ -101,10 +101,13 @@ models:
 
   "deepseek-v4-flash-0731":
     cmd: |
-      ${server}
+      ~/llama.cpp-0ce8cd1/build/bin/llama-server --port ${PORT} --jinja --agent -fa on
       -m ~/models/DeepSeek-V4-Flash-0731-GGUF/UD-IQ3_XXS/DeepSeek-V4-Flash-0731-UD-IQ3_XXS-00001-of-00004.gguf
-      -ngl 999 --split-mode layer --tensor-split 0.97,1,0.92,1.11 --ctx-size 524288 --load-mode dio
-      --parallel 4 --ubatch-size 1024
+      -md ~/models/DeepSeek-V4-Flash-0731-GGUF/DSpark/DeepSeek-V4-Flash-0731-DSpark.gguf
+      --spec-type draft-dspark --spec-draft-n-max 3 --spec-draft-p-min 0
+      --split-mode tensor -ctk f16 -ctv f16
+      -ngl 999 --ctx-size 196608 --load-mode dio
+      --parallel 2 --ubatch-size 512
       --temp 1.0 --top-p 1.0 --top-k 0 --min-p 0
     env:
       - "HIP_VISIBLE_DEVICES=0,1,2,3"
@@ -115,6 +118,31 @@ models:
       - "deepseek-v4"
       - "deepseek-0731"
       - "deepseek-v4-0731"
+
+  "deepseek-v4-flash-0731-layerspec":
+    cmd: |
+      ${server}
+      -m ~/models/DeepSeek-V4-Flash-0731-GGUF/UD-IQ3_XXS/DeepSeek-V4-Flash-0731-UD-IQ3_XXS-00001-of-00004.gguf
+      -md ~/models/DeepSeek-V4-Flash-0731-GGUF/DSpark/DeepSeek-V4-Flash-0731-DSpark.gguf
+      --spec-type draft-dspark --spec-draft-n-max 3 --spec-draft-p-min 0
+      --spec-draft-type-k q8_0 --spec-draft-type-v q8_0
+      -ngl 999 --split-mode layer --tensor-split 0.97,1,0.92,1.11 --ctx-size 524288 --load-mode dio
+      --parallel 4 --ubatch-size 512
+      --temp 1.0 --top-p 1.0 --top-k 0 --min-p 0
+    env:
+      - "HIP_VISIBLE_DEVICES=0,1,2,3"
+    ttl: 600
+
+  "deepseek-v4-flash-0731-nospec":
+    cmd: |
+      ${server}
+      -m ~/models/DeepSeek-V4-Flash-0731-GGUF/UD-IQ3_XXS/DeepSeek-V4-Flash-0731-UD-IQ3_XXS-00001-of-00004.gguf
+      -ngl 999 --split-mode layer --tensor-split 0.97,1,0.92,1.11 --ctx-size 524288 --load-mode dio
+      --parallel 4 --ubatch-size 1024
+      --temp 1.0 --top-p 1.0 --top-k 0 --min-p 0
+    env:
+      - "HIP_VISIBLE_DEVICES=0,1,2,3"
+    ttl: 600
 
   "gpt-oss-20b-cpu":
     cmd: |
