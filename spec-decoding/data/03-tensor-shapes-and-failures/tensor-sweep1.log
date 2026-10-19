@@ -1,0 +1,43 @@
+### tmp-t-n3: LOAD/CALL FAILED after 301s: HTTP Error 500: Internal Server Error
+0.00.344.206 W operator(): failed to measure the memory of the extra model, fitting without it: failed to create llama_context from model
+0.00.387.006 E llama_init_from_model: failed to initialize the context: dflash requires ctx_other to be set (this warning is normal during memory fitting)
+0.00.399.914 W operator(): failed to measure the memory of the extra model, fitting without it: failed to create llama_context from model
+0.00.327.683 E llama_init_from_model: failed to initialize the context: dflash requires ctx_other to be set (this warning is normal during memory fitting)
+0.00.340.274 W operator(): failed to measure the memory of the extra model, fitting without it: failed to create llama_context from model
+0.00.019.970 W common_fit_params: failed to fit params to free device memory: llama_params_fit is not implemented for SPLIT_MODE_TENSOR, abort
+1.36.111.326 W internal AllReduce init failed (n_devices != 2?); falling back to meta-backend butterfly
+0.00.019.060 W common_fit_params: failed to fit params to free device memory: llama_params_fit is not implemented for SPLIT_MODE_TENSOR, abort
+1.35.439.204 W internal AllReduce init failed (n_devices != 2?); falling back to meta-backend butterfly
+1.46.010.858 W internal AllReduce init failed (n_devices != 2?); falling back to meta-backend butterfly
+1.46.068.565 W spec common_specu: backend offload failed for seq_id=0; using CPU sampler
+0.00.036.826 W common_fit_params: failed to fit params to free device memory: llama_params_fit is not implemented for SPLIT_MODE_TENSOR, abort
+
+### tmp-t-n4: LOAD/CALL FAILED after 301s: HTTP Error 500: Internal Server Error
+0.00.387.006 E llama_init_from_model: failed to initialize the context: dflash requires ctx_other to be set (this warning is normal during memory fitting)
+0.00.399.914 W operator(): failed to measure the memory of the extra model, fitting without it: failed to create llama_context from model
+0.00.327.683 E llama_init_from_model: failed to initialize the context: dflash requires ctx_other to be set (this warning is normal during memory fitting)
+0.00.340.274 W operator(): failed to measure the memory of the extra model, fitting without it: failed to create llama_context from model
+0.00.019.970 W common_fit_params: failed to fit params to free device memory: llama_params_fit is not implemented for SPLIT_MODE_TENSOR, abort
+1.36.111.326 W internal AllReduce init failed (n_devices != 2?); falling back to meta-backend butterfly
+0.00.019.060 W common_fit_params: failed to fit params to free device memory: llama_params_fit is not implemented for SPLIT_MODE_TENSOR, abort
+1.35.439.204 W internal AllReduce init failed (n_devices != 2?); falling back to meta-backend butterfly
+1.46.010.858 W internal AllReduce init failed (n_devices != 2?); falling back to meta-backend butterfly
+1.46.068.565 W spec common_specu: backend offload failed for seq_id=0; using CPU sampler
+0.00.036.826 W common_fit_params: failed to fit params to free device memory: llama_params_fit is not implemented for SPLIT_MODE_TENSOR, abort
+0.00.044.051 W common_fit_params: failed to fit params to free device memory: llama_params_fit is not implemented for SPLIT_MODE_TENSOR, abort
+
+### tmp-t-n5: LOAD/CALL FAILED after 301s: HTTP Error 500: Internal Server Error
+0.00.399.914 W operator(): failed to measure the memory of the extra model, fitting without it: failed to create llama_context from model
+0.00.327.683 E llama_init_from_model: failed to initialize the context: dflash requires ctx_other to be set (this warning is normal during memory fitting)
+0.00.340.274 W operator(): failed to measure the memory of the extra model, fitting without it: failed to create llama_context from model
+0.00.019.970 W common_fit_params: failed to fit params to free device memory: llama_params_fit is not implemented for SPLIT_MODE_TENSOR, abort
+1.36.111.326 W internal AllReduce init failed (n_devices != 2?); falling back to meta-backend butterfly
+0.00.019.060 W common_fit_params: failed to fit params to free device memory: llama_params_fit is not implemented for SPLIT_MODE_TENSOR, abort
+1.35.439.204 W internal AllReduce init failed (n_devices != 2?); falling back to meta-backend butterfly
+1.46.010.858 W internal AllReduce init failed (n_devices != 2?); falling back to meta-backend butterfly
+1.46.068.565 W spec common_specu: backend offload failed for seq_id=0; using CPU sampler
+0.00.036.826 W common_fit_params: failed to fit params to free device memory: llama_params_fit is not implemented for SPLIT_MODE_TENSOR, abort
+0.00.044.051 W common_fit_params: failed to fit params to free device memory: llama_params_fit is not implemented for SPLIT_MODE_TENSOR, abort
+0.00.042.870 W common_fit_params: failed to fit params to free device memory: llama_params_fit is not implemented for SPLIT_MODE_TENSOR, abort
+
+config restored

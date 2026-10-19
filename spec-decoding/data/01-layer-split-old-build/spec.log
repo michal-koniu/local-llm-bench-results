@@ -1,0 +1,29 @@
+[deepseek-v4-flash-0731-spec] model ready after 36s (incl. load)
+{'work': 'translate', 'temp': 0.0, 'rep': 0, 'tokens': 280, 'tps': 30.250070502180446, 'draft_n': 400, 'draft_acc': 200, 'wall': 10.12}
+{'work': 'translate', 'temp': 0.0, 'rep': 1, 'tokens': 280, 'tps': 30.16328064921759, 'draft_n': 400, 'draft_acc': 200, 'wall': 76.34}
+{'work': 'toolcall', 'temp': 0.0, 'rep': 0, 'tokens': 85, 'tps': 48.06979734574602, 'draft_n': 75, 'draft_acc': 69, 'wall': 2.85}
+{'work': 'toolcall', 'temp': 0.0, 'rep': 1, 'tokens': 91, 'tps': 48.7179070787119, 'draft_n': 80, 'draft_acc': 74, 'wall': 1.95}
+{'work': 'code', 'temp': 0.0, 'rep': 0, 'tokens': 300, 'tps': 37.98741409635437, 'draft_n': 342, 'draft_acc': 229, 'wall': 8.22}
+{'work': 'code', 'temp': 0.0, 'rep': 1, 'tokens': 300, 'tps': 37.89601814243352, 'draft_n': 342, 'draft_acc': 229, 'wall': 8.0}
+{'work': 'prose', 'temp': 0.0, 'rep': 0, 'tokens': 300, 'tps': 21.905602823141344, 'draft_n': 597, 'draft_acc': 178, 'wall': 13.95}
+{'work': 'prose', 'temp': 0.0, 'rep': 1, 'tokens': 300, 'tps': 21.902318151608434, 'draft_n': 597, 'draft_acc': 178, 'wall': 13.77}
+{'work': 'translate', 'temp': 1.0, 'rep': 0, 'tokens': 187, 'tps': 30.759145636616747, 'draft_n': 260, 'draft_acc': 135, 'wall': 6.18}
+{'work': 'translate', 'temp': 1.0, 'rep': 1, 'tokens': 293, 'tps': 29.47427582108065, 'draft_n': 425, 'draft_acc': 208, 'wall': 10.02}
+{'work': 'toolcall', 'temp': 1.0, 'rep': 0, 'tokens': 103, 'tps': 46.25179112328369, 'draft_n': 95, 'draft_acc': 84, 'wall': 2.36}
+{'work': 'toolcall', 'temp': 1.0, 'rep': 1, 'tokens': 83, 'tps': 47.52303563242439, 'draft_n': 75, 'draft_acc': 67, 'wall': 1.83}
+{'work': 'code', 'temp': 1.0, 'rep': 0, 'tokens': 300, 'tps': 33.91784326984344, 'draft_n': 386, 'draft_acc': 221, 'wall': 9.15}
+{'work': 'code', 'temp': 1.0, 'rep': 1, 'tokens': 300, 'tps': 28.069877660395413, 'draft_n': 468, 'draft_acc': 205, 'wall': 10.77}
+{'work': 'prose', 'temp': 1.0, 'rep': 0, 'tokens': 300, 'tps': 17.344163129337165, 'draft_n': 754, 'draft_acc': 147, 'wall': 17.54}
+{'work': 'prose', 'temp': 1.0, 'rep': 1, 'tokens': 300, 'tps': 21.272531363643964, 'draft_n': 613, 'draft_acc': 175, 'wall': 14.17}
+
+=== SUMMARY deepseek-v4-flash-0731-spec
+work       temp   tok/s  accept
+translate   0.0    30.2    0.50
+toolcall    0.0    48.4    0.92
+code        0.0    37.9    0.67
+prose       0.0    21.9    0.30
+translate   1.0    30.1    0.50
+toolcall    1.0    46.9    0.89
+code        1.0    31.0    0.50
+prose       1.0    19.3    0.24
+ALL                33.2

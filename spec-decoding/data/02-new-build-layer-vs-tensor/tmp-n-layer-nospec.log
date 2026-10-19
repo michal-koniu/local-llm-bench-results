@@ -1,0 +1,21 @@
+[tmp-n-layer-nospec] model ready after 0s (incl. load)
+{'work': 'translate', 'temp': 0.0, 'rep': 0, 'tokens': 298, 'tps': 24.098342658796923, 'draft_n': None, 'draft_acc': None, 'wall': 12.94}
+{'work': 'toolcall', 'temp': 0.0, 'rep': 0, 'tokens': 75, 'tps': 24.045139876102542, 'draft_n': None, 'draft_acc': None, 'wall': 4.1}
+{'work': 'code', 'temp': 0.0, 'rep': 0, 'tokens': 300, 'tps': 24.171976417205403, 'draft_n': None, 'draft_acc': None, 'wall': 12.68}
+{'work': 'prose', 'temp': 0.0, 'rep': 0, 'tokens': 300, 'tps': 25.722848608475623, 'draft_n': None, 'draft_acc': None, 'wall': 11.9}
+{'work': 'translate', 'temp': 1.0, 'rep': 0, 'tokens': 239, 'tps': 25.792060076860338, 'draft_n': None, 'draft_acc': None, 'wall': 9.33}
+{'work': 'toolcall', 'temp': 1.0, 'rep': 0, 'tokens': 103, 'tps': 25.83042276804888, 'draft_n': None, 'draft_acc': None, 'wall': 4.05}
+{'work': 'code', 'temp': 1.0, 'rep': 0, 'tokens': 300, 'tps': 25.81940783576715, 'draft_n': None, 'draft_acc': None, 'wall': 11.87}
+{'work': 'prose', 'temp': 1.0, 'rep': 0, 'tokens': 300, 'tps': 25.85611633349893, 'draft_n': None, 'draft_acc': None, 'wall': 11.82}
+
+=== SUMMARY tmp-n-layer-nospec
+work       temp   tok/s  accept
+translate   0.0    24.1     nan
+toolcall    0.0    24.0     nan
+code        0.0    24.2     nan
+prose       0.0    25.7     nan
+translate   1.0    25.8     nan
+toolcall    1.0    25.8     nan
+code        1.0    25.8     nan
+prose       1.0    25.9     nan
+ALL                25.2

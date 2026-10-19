@@ -1,0 +1,21 @@
+[tmp-n-tensor-nospec] model ready after 1s (incl. load)
+{'work': 'translate', 'temp': 0.0, 'rep': 0, 'tokens': 300, 'tps': 29.44455747390513, 'draft_n': None, 'draft_acc': None, 'wall': 10.94}
+{'work': 'toolcall', 'temp': 0.0, 'rep': 0, 'tokens': 85, 'tps': 28.829590691886157, 'draft_n': None, 'draft_acc': None, 'wall': 3.71}
+{'work': 'code', 'temp': 0.0, 'rep': 0, 'tokens': 300, 'tps': 29.498813190724825, 'draft_n': None, 'draft_acc': None, 'wall': 10.46}
+{'work': 'prose', 'temp': 0.0, 'rep': 0, 'tokens': 300, 'tps': 29.478335986383573, 'draft_n': None, 'draft_acc': None, 'wall': 10.43}
+{'work': 'translate', 'temp': 1.0, 'rep': 0, 'tokens': 185, 'tps': 28.757634253218157, 'draft_n': None, 'draft_acc': None, 'wall': 6.59}
+{'work': 'toolcall', 'temp': 1.0, 'rep': 0, 'tokens': 93, 'tps': 28.78841454065268, 'draft_n': None, 'draft_acc': None, 'wall': 3.39}
+{'work': 'code', 'temp': 1.0, 'rep': 0, 'tokens': 300, 'tps': 28.964748544812, 'draft_n': None, 'draft_acc': None, 'wall': 10.63}
+{'work': 'prose', 'temp': 1.0, 'rep': 0, 'tokens': 300, 'tps': 28.99271923974303, 'draft_n': None, 'draft_acc': None, 'wall': 10.6}
+
+=== SUMMARY tmp-n-tensor-nospec
+work       temp   tok/s  accept
+translate   0.0    29.4     nan
+toolcall    0.0    28.8     nan
+code        0.0    29.5     nan
+prose       0.0    29.5     nan
+translate   1.0    28.8     nan
+toolcall    1.0    28.8     nan
+code        1.0    29.0     nan
+prose       1.0    29.0     nan
+ALL                29.1

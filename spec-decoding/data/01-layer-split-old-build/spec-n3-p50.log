@@ -1,0 +1,21 @@
+[deepseek-v4-flash-0731-spec-n3-p50] model ready after 35s (incl. load)
+{'work': 'translate', 'temp': 0.0, 'rep': 0, 'tokens': 280, 'tps': 34.140848007269675, 'draft_n': 247, 'draft_acc': 177, 'wall': 9.07}
+{'work': 'toolcall', 'temp': 0.0, 'rep': 0, 'tokens': 85, 'tps': 44.113731501773216, 'draft_n': 66, 'draft_acc': 63, 'wall': 3.02}
+{'work': 'code', 'temp': 0.0, 'rep': 0, 'tokens': 300, 'tps': 37.90777962724355, 'draft_n': 251, 'draft_acc': 205, 'wall': 8.23}
+{'work': 'prose', 'temp': 0.0, 'rep': 0, 'tokens': 300, 'tps': 25.669799326558394, 'draft_n': 225, 'draft_acc': 146, 'wall': 11.95}
+{'work': 'translate', 'temp': 1.0, 'rep': 0, 'tokens': 300, 'tps': 31.209266166817393, 'draft_n': 276, 'draft_acc': 184, 'wall': 9.72}
+{'work': 'toolcall', 'temp': 1.0, 'rep': 0, 'tokens': 103, 'tps': 43.599525534575065, 'draft_n': 83, 'draft_acc': 75, 'wall': 2.48}
+{'work': 'code', 'temp': 1.0, 'rep': 0, 'tokens': 300, 'tps': 32.773232577382366, 'draft_n': 291, 'draft_acc': 189, 'wall': 9.46}
+{'work': 'prose', 'temp': 1.0, 'rep': 0, 'tokens': 300, 'tps': 25.052977831298605, 'draft_n': 231, 'draft_acc': 142, 'wall': 12.23}
+
+=== SUMMARY deepseek-v4-flash-0731-spec-n3-p50
+work       temp   tok/s  accept
+translate   0.0    34.1    0.72
+toolcall    0.0    44.1    0.95
+code        0.0    37.9    0.82
+prose       0.0    25.7    0.65
+translate   1.0    31.2    0.67
+toolcall    1.0    43.6    0.90
+code        1.0    32.8    0.65
+prose       1.0    25.1    0.61
+ALL                34.3

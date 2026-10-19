@@ -1,0 +1,12 @@
+[deepseek-v4-flash-0731-spec-par4] ready
+{'N': 1, 'rnd': 0, 'per_stream_tps': 33.4, 'aggregate_tps': 29.4, 'accept': 0.63, 'wall': 7.0}
+{'N': 1, 'rnd': 1, 'per_stream_tps': 33.4, 'aggregate_tps': 33.0, 'accept': 0.63, 'wall': 6.2}
+{'N': 2, 'rnd': 0, 'per_stream_tps': 24.8, 'aggregate_tps': 45.1, 'accept': 0.75, 'wall': 13.3}
+{'N': 2, 'rnd': 1, 'per_stream_tps': 24.8, 'aggregate_tps': 47.5, 'accept': 0.75, 'wall': 12.6}
+{'N': 4, 'rnd': 0, 'per_stream_tps': 13.5, 'aggregate_tps': 46.3, 'accept': 0.62, 'wall': 23.9}
+{'N': 4, 'rnd': 1, 'per_stream_tps': 13.8, 'aggregate_tps': 47.7, 'accept': 0.63, 'wall': 23.2}
+
+=== SUMMARY deepseek-v4-flash-0731-spec-par4
+N=1: per-stream  33.4 tok/s | aggregate  31.2 tok/s
+N=2: per-stream  24.8 tok/s | aggregate  46.3 tok/s
+N=4: per-stream  13.7 tok/s | aggregate  47.0 tok/s

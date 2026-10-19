@@ -1,0 +1,12 @@
+[deepseek] ready
+{'N': 1, 'rnd': 0, 'per_stream_tps': 33.3, 'aggregate_tps': 31.0, 'accept': 0.63, 'wall': 6.6}
+{'N': 1, 'rnd': 1, 'per_stream_tps': 33.3, 'aggregate_tps': 32.8, 'accept': 0.63, 'wall': 6.2}
+{'N': 2, 'rnd': 0, 'per_stream_tps': 24.6, 'aggregate_tps': 45.2, 'accept': 0.75, 'wall': 13.3}
+{'N': 2, 'rnd': 1, 'per_stream_tps': 24.5, 'aggregate_tps': 46.8, 'accept': 0.75, 'wall': 12.8}
+{'N': 4, 'rnd': 0, 'per_stream_tps': 13.7, 'aggregate_tps': 48.9, 'accept': 0.66, 'wall': 22.6}
+{'N': 4, 'rnd': 1, 'per_stream_tps': 14.1, 'aggregate_tps': 51.2, 'accept': 0.68, 'wall': 21.6}
+
+=== SUMMARY deepseek
+N=1: per-stream  33.3 tok/s | aggregate  31.9 tok/s
+N=2: per-stream  24.6 tok/s | aggregate  46.0 tok/s
+N=4: per-stream  13.9 tok/s | aggregate  50.0 tok/s
