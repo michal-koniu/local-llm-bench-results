@@ -1,109 +1,111 @@
-# Current llama-swap config of the reference rig (comments removed, home directory shown as ~).
-# The exact command of every run is in its manifest.json (server.llama_swap.cmd). DeepSeek-V4-Flash-0731 was served with --parallel 1 until 2026-10-11, with --parallel 4 until 2026-10-19,
-# and since then with a speculative-decoding draft and --split-mode tensor on 2 slots (see SPEC-DECODING.md); the previous layouts remain as ...-layerspec and ...-nospec.
-# Entries with an explicit llama-server path use llama.cpp 0ce8cd1; the `server` macro still points at the older build 680a036.
-# One model in VRAM at a time; each entry launches llama.cpp llama-server with the flags below.
-# HIP_VISIBLE_DEVICES picks the GPUs; --tensor-split balances layers across them.
-# --agent enables llama-server built-in tools for the web UI only; the benches use /v1/chat/completions,
-# which never executes them.
+# llama-swap - centralny widok i serwowanie modeli lokalnych
+#
+# WAZNE: kazdy model startuje TWOIM llama-server (build GGML_HIP=ON,
+# GPU_TARGETS=gfx1201). Zadnego obcego runtime'u - dzieki temu to, co serwujesz,
+# jest dokladnie tym, co mierzysz stelazem pomiarowym. Aktualny commit: 680a036
+# (przebudowany 28 IX 2026, poprzednio 987498f -- patrz TECHNIKA.md).
+#
+# Przeglad i optymalizacja: 30 IX 2026. Poprzednia wersja:
+# config.yaml.bak-20260930-przed-optymalizacja. Co sie zmienilo i dlaczego:
+#   * --agent dla KAZDEGO modelu (makro ${server}): wszystkie wbudowane narzedzia
+#     llama-server (read_file, file_glob_search, grep_search, exec_shell_command,
+#     write_file, edit_file, get_info) + proxy CORS dla serwerow MCP. Wywolania
+#     narzedzi przez API (OpenAI "tools") dzialaja przez --jinja (domyslnie wlaczone).
+#     UWAGA: exec_shell_command wykonuje polecenia jako mkoniu na tej maszynie, a
+#     llama-swap slucha na 0.0.0.0:8080 BEZ hasla -- kazdy w tej sieci LAN moze tego
+#     uzyc. Patrz sekcja "Bezpieczenstwo" w SERWOWANIE-MODELI.md.
+#   * -fa on (flash attention) jawnie: sprawdzone, ze wszystkie 8 modeli GPU dzialaja.
+#   * --ubatch-size dobrany POMIAREM dla kazdego modelu osobno (llama-bench, prompt
+#     4096 tokenow, 256/512/1024/2048/4096, 2 powtorzenia; zasada: najmniejsza
+#     wartosc w granicach 2 % od najlepszej -- wiekszy ubatch zjada VRAM na kontekst).
+#     Domyslne 512 nigdy nie bylo najlepsze: +3 % (qwen3-32b) do +57 % (qwen3-235b).
+#     Za duzy tez szkodzi: DeepSeek przy 4096 traci 58 % wzgledem 1024.
+#     --batch-size musi byc >= ubatch (domyslne 2048).
+#   * --ctx-size podniesione do natywnego maksimum modelu tam, gdzie miesci sie w VRAM
+#     przy 4 kartach (kazdy wpis sprawdzony zaladowaniem przez llama-swap).
+#
+# Domyslnie llama-swap trzyma JEDEN model naraz i przelacza na zadanie -- modele
+# nie dziela kart, bo nigdy nie dzialaja jednoczesnie. Kazdy wpis ma
+# HIP_VISIBLE_DEVICES ustawione na NAJMNIEJ kart, na ktorych model sie miesci:
+# wiecej kart przy -sm layer = wiecej przekazan miedzy kartami = wolniejsze
+# generowanie, a nie szybsze.
+#
+# UWAGA na skladnie: w llama-server/llama-cli --tensor-split pisze sie PRZECINKAMI
+# (1,1,1,1). W llama-bench -- UKOSNIKAMI (1/1/1/1), bo tam przecinek oznacza
+# "przetestuj kilka wartosci". To ta pomylka stala za "bledem llama-bench + dio".
+#
+# ttl = sekundy bezczynnosci, po ktorych model jest zwalniany i VRAM wraca.
+#
+# healthCheckTimeout: duze modele (dio) moga potrzebowac >120 s zanim /health
+# zwroci 200. 300 s zostawione celowo.
 healthCheckTimeout: 300
+#
+# 4 karty R9700 (30 IX 2026, rocminfo + amd-smi):
+#   0 = 0000:03:00.0 (x8), 1 = 0000:06:00.0 (x4), 2 = 0000:09:00.0 (x8), 3 = 0000:19:00.0 (x4).
+# iGPU Raphael (0000:1a:00.0) jest index 4. NIGDY nie wpisuj go do HIP_VISIBLE_DEVICES.
 
 macros:
-  server: "~/llama.cpp/build/bin/llama-server --port ${PORT} --jinja --agent -fa on"
+  server: "/home/mkoniu/llama.cpp/build/bin/llama-server --port ${PORT} --jinja --agent -fa on"
 
 models:
+  # Bielik 11B v3.0 (dense, polski). ubatch 2048: +8 % promptu vs 512.
+  # Narzedzia: wbudowany szablon Bielika NIE obsluguje "tools" (model odpowiadal
+  # zwyklym tekstem). Szablon Hermes-3 z JEDNA zmiana (spacja po <tool_call>, bo
+  # Bielik zawsze ja wstawia) -> wywolania narzedzi dzialaja, PL i EN, wieloetapowo.
+  # Ograniczenia (30 IX): tool_choice "required" konczy sie bledem llama.cpp
+  # ("Failed to initialize samplers") -- "auto" dziala; Bielik bywa nadgorliwy
+  # (wola narzedzie tez przy pytaniu "ile to 2+2"). Do agentow lepszy gpt-oss/qwen.
   "bielik-11b":
+    # context+skills source (auto-detect): ~/.config/llama-swap/AGENT_BOOTSTRAP.md + ~/ai_skills/INDEX.md
+    description: "Context: ~/.config/llama-swap/AGENT_BOOTSTRAP.md | Skills: ~/ai_skills/INDEX.md (auto-detect each session)"
     cmd: |
       ${server}
-      -m ~/models/bielik-11b/Bielik-11B-v3.0-Instruct.Q8_0.gguf
+      -m /home/mkoniu/models/bielik-11b/Bielik-11B-v3.0-Instruct.Q8_0.gguf
       -ngl 999 --ctx-size 32768 --load-mode dio
       --ubatch-size 2048
-      --chat-template-file ~/.config/llama-swap/templates/bielik-11b-tools.jinja
+      --chat-template-file /home/mkoniu/.config/llama-swap/templates/bielik-11b-tools.jinja
     env:
       - "HIP_VISIBLE_DEVICES=0"
     ttl: 600
     aliases:
       - "bielik"
 
-  "gpt-oss-20b":
-    cmd: |
-      ${server}
-      -m ~/models/gpt-oss-20b/gpt-oss-20b-MXFP4.gguf
-      -ngl 999 --ctx-size 131072 --load-mode dio
-      --ubatch-size 2048
-    env:
-      - "HIP_VISIBLE_DEVICES=0"
-    ttl: 600
-    aliases:
-      - "gpt-oss"
-
-  "qwen3-32b":
-    cmd: |
-      ${server}
-      -m ~/models/qwen3-32b/Qwen_Qwen3-32B-Q4_K_M.gguf
-      -ngl 999 --ctx-size 32768 --load-mode dio
-      --ubatch-size 1024
-    env:
-      - "HIP_VISIBLE_DEVICES=0"
-    ttl: 600
-    aliases:
-      - "qwen3"
-
-  "qwen3-next-80b":
-    cmd: |
-      ${server}
-      -m ~/models/qwen3-next-80b/Q4_1/Qwen3-Next-80B-A3B-Instruct-Q4_1-00001-of-00002.gguf
-      -ngl 999 --split-mode layer --tensor-split 0.9,1 --ctx-size 262144 --load-mode dio
-      --ubatch-size 1024
-    env:
-      - "HIP_VISIBLE_DEVICES=0,1"
-    ttl: 600
-    aliases:
-      - "qwen3-next"
-
-  "gpt-oss-120b":
-    cmd: |
-      ${server}
-      -m ~/models/gpt-oss-120b/gpt-oss-120b-MXFP4.gguf
-      -ngl 999 --split-mode layer --tensor-split 1,1,1 --ctx-size 131072 --load-mode dio
-      --ubatch-size 1024
-    env:
-      - "HIP_VISIBLE_DEVICES=0,1,2"
-    ttl: 600
-    aliases:
-      - "gpt-oss-big"
-
-  "laguna-s-2.1":
-    cmd: |
-      ${server}
-      -m ~/models/laguna-s-2.1/UD-Q4_K_XL/Laguna-S-2.1-UD-Q4_K_XL-00001-of-00003.gguf
-      -ngl 999 --split-mode layer --tensor-split 0.9,1,1.1 --ctx-size 262144 --load-mode dio
-      --ubatch-size 2048
-    env:
-      - "HIP_VISIBLE_DEVICES=0,1,2"
-    ttl: 600
-    aliases:
-      - "laguna"
-
-  "qwen3-235b-q3":
-    cmd: |
-      ${server}
-      -m ~/models/Qwen3-235B-A22B-GGUF/UD-Q3_K_XL/Qwen3-235B-A22B-UD-Q3_K_XL-00001-of-00003.gguf
-      -ngl 999 --split-mode layer --tensor-split 0.95,1,1,1.05 --ctx-size 40960 --load-mode dio
-      --batch-size 4096 --ubatch-size 4096
-    env:
-      - "HIP_VISIBLE_DEVICES=0,1,2,3"
-    ttl: 600
-    aliases:
-      - "qwen3-235b"
-      - "qwen3-235b-xl"
-      - "qwen3-q3"
-
+  # DeepSeek-V4-Flash-0731 -- OFICJALNE wydanie (31 VII 2026). 30 IX zastapil wersje
+  # preview (usunieta z konfiguracji i z dysku); przejal jej nazwy, wiec klienci
+  # uzywajacy "deepseek-v4-flash" / "deepseek" dostaja teraz 0731. Ta sama architektura (deepseek4, 284B / 13B aktywnych), duzo
+  # lepsza praca agentowa (wg DeepSeek: DeepSWE 7.3 -> 54.4, Terminal-Bench 2.1 82.7).
+  # Unsloth UD-IQ3_XXS, 4 shardy, 104.2 GB (sumy SHA256 sprawdzone 30 IX).
+  # Kompresowana uwaga: KV jest tanie, ctx 512k sprawdzone zaladowaniem. --parallel 4 (od 11 X) =
+  # 4 agentow naraz, po 131k kontekstu; 1 agent 22.6 tok/s, 4 agentow po 13.6 (lacznie 54).
+  # ubatch 1024 (+35 % promptu; 2048 -15 %, 4096 -58 %).
+  # Podzial 0.97,1,0.92,1.11: przy 0.97,1,0.97,1.06 karta 2 miala tylko 0.45 GB wolne;
+  # teraz min. 1.4 GB na kazdej (43 duze warstwy -- lepiej sie nie da wyrownac).
+  # Zmierzone 30 IX (bench.py, 250 W): pp512 560, pp4096 1089, tg128 24.7 tok/s.
+  # 19 X 2026: SPECULATIVE DECODING (DSpark). Oficjalna glowica draftu DeepSeeka z checkpointu 0731
+  # (skonwertowana do GGUF, 10.9 GB, lezy w models/.../DSpark/) zgaduje 3 tokeny naprzod, a model
+  # glowny sprawdza je jednym przebiegiem. Wynik bez zmiany jakosci (kazdy token weryfikuje model).
+  # Zmierzone, ten sam uklad 4 x 131k: 1 agent 23.1 -> 33.4 tok/s (+45 %), 2 agenty lacznie
+  # 38 -> 46 (+22 %), 4 agenty lacznie 50.7 -> 47.0 (-7 %, GPU juz nasycone batchingiem).
+  # Cena: (1) pamiec -- draft zjada ~4 GB/karta, wiec ubatch 1024 -> 512 i KV draftu q8_0, zeby karta 0
+  # miala >= 0.8 GB wolnego (przy 1024 zostawalo 0.15 GB); (2) PREFILL (przetwarzanie promptu) spada
+  # z ~960 do ~490 tok/s, bo draft tez musi przeczytac prompt -- do zadan z ogromnymi promptami i
+  # krotka odpowiedzia uzyj modelu "deepseek-v4-flash-0731-nospec".
+  # Draft miesci sie w VRAM bez zmiany ctx/parallel. Pelny opis, strojenie i procedura dla
+  # innych modeli: ~/Desktop/local_agents_project/SPECULATIVE-DECODING.md i PROCEDURA-SPEC-DECODING.md.
+  # Powrot do starego zachowania: model "deepseek-v4-flash-0731-nospec" (ten sam uklad, bez draftu).
+  # 19 X 2026 (wieczor): TRYB TENSOR + NOWY llama.cpp (0ce8cd1, osobny katalog ~/llama.cpp-0ce8cd1) + DSpark.
+  # Wszystkie 4 karty licza kazdy token rownolegle (zamiast pipeline'u warstw) -- 1 agent ~50 tok/s
+  # (bylo 23.5), 2 agenty lacznie ~63. 2 sloty x 98304 ctx (przy 4 slotach brak VRAM w trybie tensor:
+  # KV jest tu nieskwantyzowany). --fit i nierowny --tensor-split NIE dzialaja w trybie tensor
+  # (zawieszenie przy ladowaniu). Stary uklad (warstwy + DSpark, 4 sloty): "...-layerspec".
+  # Szczegoly, pomiary i cofanie: SPECULATIVE-DECODING.md. Kopia configu: config.yaml.bak-20261019-przed-tensor
   "deepseek-v4-flash-0731":
+    # context+skills source (auto-detect): ~/.config/llama-swap/AGENT_BOOTSTRAP.md + ~/ai_skills/INDEX.md
+    description: "Context: ~/.config/llama-swap/AGENT_BOOTSTRAP.md | Skills: ~/ai_skills/INDEX.md (auto-detect each session)"
     cmd: |
-      ~/llama.cpp-0ce8cd1/build/bin/llama-server --port ${PORT} --jinja --agent -fa on
-      -m ~/models/DeepSeek-V4-Flash-0731-GGUF/UD-IQ3_XXS/DeepSeek-V4-Flash-0731-UD-IQ3_XXS-00001-of-00004.gguf
-      -md ~/models/DeepSeek-V4-Flash-0731-GGUF/DSpark/DeepSeek-V4-Flash-0731-DSpark.gguf
+      /home/mkoniu/llama.cpp-0ce8cd1/build/bin/llama-server --port ${PORT} --jinja --agent -fa on
+      -m /home/mkoniu/models/DeepSeek-V4-Flash-0731-GGUF/UD-IQ3_XXS/DeepSeek-V4-Flash-0731-UD-IQ3_XXS-00001-of-00004.gguf
+      -md /home/mkoniu/models/DeepSeek-V4-Flash-0731-GGUF/DSpark/DeepSeek-V4-Flash-0731-DSpark.gguf
       --spec-type draft-dspark --spec-draft-n-max 3 --spec-draft-p-min 0
       --split-mode tensor -ctk f16 -ctv f16
       -ngl 999 --ctx-size 196608 --load-mode dio
@@ -119,24 +121,12 @@ models:
       - "deepseek-0731"
       - "deepseek-v4-0731"
 
-  "deepseek-v4-flash-0731-layerspec":
-    cmd: |
-      ${server}
-      -m ~/models/DeepSeek-V4-Flash-0731-GGUF/UD-IQ3_XXS/DeepSeek-V4-Flash-0731-UD-IQ3_XXS-00001-of-00004.gguf
-      -md ~/models/DeepSeek-V4-Flash-0731-GGUF/DSpark/DeepSeek-V4-Flash-0731-DSpark.gguf
-      --spec-type draft-dspark --spec-draft-n-max 3 --spec-draft-p-min 0
-      --spec-draft-type-k q8_0 --spec-draft-type-v q8_0
-      -ngl 999 --split-mode layer --tensor-split 0.97,1,0.92,1.11 --ctx-size 524288 --load-mode dio
-      --parallel 4 --ubatch-size 512
-      --temp 1.0 --top-p 1.0 --top-k 0 --min-p 0
-    env:
-      - "HIP_VISIBLE_DEVICES=0,1,2,3"
-    ttl: 600
-
+  # Stary produkcyjny uklad (bez draftu) -- do porownan A/B i jako awaryjny powrot.
   "deepseek-v4-flash-0731-nospec":
+    description: "DeepSeek 0731 BEZ speculative decoding (stary uklad produkcyjny)"
     cmd: |
       ${server}
-      -m ~/models/DeepSeek-V4-Flash-0731-GGUF/UD-IQ3_XXS/DeepSeek-V4-Flash-0731-UD-IQ3_XXS-00001-of-00004.gguf
+      -m /home/mkoniu/models/DeepSeek-V4-Flash-0731-GGUF/UD-IQ3_XXS/DeepSeek-V4-Flash-0731-UD-IQ3_XXS-00001-of-00004.gguf
       -ngl 999 --split-mode layer --tensor-split 0.97,1,0.92,1.11 --ctx-size 524288 --load-mode dio
       --parallel 4 --ubatch-size 1024
       --temp 1.0 --top-p 1.0 --top-k 0 --min-p 0
@@ -144,11 +134,121 @@ models:
       - "HIP_VISIBLE_DEVICES=0,1,2,3"
     ttl: 600
 
-  "gpt-oss-20b-cpu":
+  # ---------------------------------------------------------------------------------------------
+  # Qwen3.6-35B-A3B (27 X 2026). MoE 256/8, 3B aktywnych, hybryda Gated DeltaNet (tylko 10/40
+  # warstw ma KV -> ~20 KiB/token). Unsloth UD-Q5_K_XL, 24.8 GiB, miesci sie na JEDNEJ karcie.
+  # Backend VULKAN (osobny build ~/llama.cpp-0ce8cd1-vulkan, ten sam commit co ROCm): na 1 karcie
+  # tg128 111.3 vs 86.7 tok/s na ROCm (+28 %), przy 16k kontekstu 101.8 vs 81.4. Prompt z ubatch 2048:
+  # 4158 tok/s (ROCm domyslnie 3589). Q4_K_XL dawal tylko +3 % (114.7) -- zostaje Q5 (jakosc).
+  # Wybor karty w Vulkanie: GGML_VK_VISIBLE_DEVICES (HIP_VISIBLE_DEVICES tu NIE dziala).
+  # Sampling = zalecenie Qwena dla "thinking, precise coding" (klient moze nadpisac).
+  # --spec-type ngram-mod: zgadywanie z powtorzen w kontekscie (bez modelu draftu). bench_spec: bez
+  # powtorzen 0 % kosztu (107.0 vs 107.4), tlumaczenie 147-150, kod przy temp 1.0 138; srednio 107.8 -> 122.2.
+  # Opis i pomiary: ~/Desktop/local_agents_project/AGENTIC-MODELS-GUIDE.md
+  "qwen3.6-35b-a3b":
+    description: "Qwen3.6-35B-A3B, 1 GPU (Vulkan), ~110 tok/s, 2 slots x 131k shared ctx"
     cmd: |
-      ${server}
-      -m ~/models/gpt-oss-20b/gpt-oss-20b-MXFP4.gguf
-      -ngl 0 -t 8 --ctx-size 32768
+      /home/mkoniu/llama.cpp-0ce8cd1-vulkan/build/bin/llama-server --port ${PORT} --jinja --agent -fa on
+      -m /home/mkoniu/models/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf
+      -ngl 999 --ctx-size 262144 --kv-unified --parallel 2
+      --batch-size 2048 --ubatch-size 2048
+      --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0 --presence-penalty 0
+      --spec-type ngram-mod
     env:
-      - "HIP_VISIBLE_DEVICES="
-    ttl: 900
+      - "GGML_VK_VISIBLE_DEVICES=1"
+    ttl: 600
+    aliases:
+      - "qwen3.6"
+      - "qwen36"
+
+  # POOL: 4 kopie Qwen3.6-35B-A3B, po jednej na karte, x 3 sloty = 12 agentow naraz, jeden adres.
+  # llama-pool.py startuje kopie na 127.0.0.1:18100-18103 i kieruje rozmowe z powrotem do kopii, ktora
+  # ma ja w cache (inaczej kazda tura czyta cala historie od nowa). 196608 ctx na karte, wspolne dla
+  # 3 slotow (--kv-unified: jeden agent moze zajac caly kontekst, gdy inne sa krotkie).
+  # Zmierzone (bench_conc, 300 tok): 1 agent 109, 4 agentow po 110 (lacznie 418), 8 po 84 (590),
+  # 12 po 71 (677 tok/s lacznie). Wszystkie 4 karty ~94 % zajete, na limicie 250 W.
+  "qwen3.6-35b-a3b-x4":
+    description: "Qwen3.6-35B-A3B x4 GPUs (pool), 12 agents, ~110 tok/s each up to 4, 677 tok/s total at 12"
+    cmd: |
+      python3 /home/mkoniu/.config/llama-swap/llama-pool.py --port ${PORT} --gpus 0,1,2,3 --slots 3
+      --server /home/mkoniu/llama.cpp-0ce8cd1-vulkan/build/bin/llama-server --
+      --jinja --agent -fa on
+      -m /home/mkoniu/models/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf
+      -ngl 999 --ctx-size 196608 --kv-unified
+      --batch-size 2048 --ubatch-size 2048
+      --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0 --presence-penalty 0
+      --spec-type ngram-mod
+    ttl: 600
+    aliases:
+      - "qwen3.6-pool"
+      - "qwen36-x4"
+
+
+
+  # ---------------------------------------------------------------------------------------------
+  # Qwen3.8-Flash-Next (27 X 2026). NAJMADRZEJSZY model na tej maszynie (Qwen: SWE-bench Pro 62.5
+  # vs 56.0 DeepSeek-V4-Flash-0731). 125B MoE / 6B aktywnych + 51B tablica n-gramow + glowica MTP.
+  # Architektura qwen4exp (podglad Qwen4): Gated DeltaNet + rzadka uwaga QSA + hyper-connections.
+  # Unsloth UD-Q5_K_XL, 147 GiB na dysku; tablica n-gramow (50.7 GiB) zostaje w RAM (czytana leniwie,
+  # wiersz na token), w VRAM ~96 GiB. llama.cpp NOWY (e86f5fd, 27 X) -- ma polaczone jadra QSA.
+  # DLACZEGO ~70, a nie 100+ tok/s: llama.cpp uruchamia ~3400 malych jader GPU na token; kazde kosztuje
+  # kilka us niezaleznie od rozmiaru (profil rocprofv3). Bez draftu 36 tok/s i to SAMO w trybie tensor,
+  # warstwy, Vulkan, Q4_K_XL zamiast Q5, na 3 kartach zamiast 4, z RCCL i bez HIP graphs -- limit
+  # implementacji, nie przepustowosci pamieci. Pomaga: profil GPU COMPUTE (+9 %, gpu-tuning.sh) i draft.
+  # Draft MTP n-max 4 (bench_spec, 1 agent): srednio 69.6, narzedzia 78-97, tlumaczenie 80-86, kod 57-69,
+  # proza 44-45 tok/s. DFlash2 (incoai, Q8_0) daje to samo (69.0; limit ~4 tokenow na krok przez QSA).
+  # Pelny opis: ~/Desktop/local_agents_project/AGENTIC-MODELS-GUIDE.md
+  # ctx 262144 + 2 sloty: brak VRAM na karcie 3 -> 131072 wspolne dla 2 slotow.
+  # Sampling = Qwen "thinking" (temp 1.0, top_p 0.95, top_k 20).
+  "qwen3.8-flash-next":
+    description: "Qwen3.8-Flash-Next (smartest), 4 GPUs, ROCm layer + MTP, ~70 tok/s (tools ~80-97), 131k ctx"
+    cmd: |
+      /home/mkoniu/llama.cpp-e86f5fd/build/bin/llama-server --port ${PORT} --jinja --agent -fa on
+      -m /home/mkoniu/models/qwen3.8-flash-next/UD-Q5_K_XL/Qwen3.8-Flash-Next-UD-Q5_K_XL-00001-of-00006.gguf
+      -md /home/mkoniu/models/qwen3.8-flash-next/mtp-Qwen3.8-Flash-Next-Q8_0.gguf
+      --spec-type draft-mtp --spec-draft-n-max 4
+      -ngl 999 --split-mode layer --tensor-split 0.95,1,1,1.05 --ctx-size 131072 --kv-unified --parallel 2
+      --load-mode dio
+      --temp 1.0 --top-p 0.95 --top-k 20 --min-p 0 --presence-penalty 0
+    env:
+      - "HIP_VISIBLE_DEVICES=0,1,2,3"
+    ttl: 600
+    aliases:
+      - "qwen3.8"
+      - "qwen38"
+      - "smartest"
+
+  # ---------------------------------------------------------------------------------------------
+  # Gemma 4 26B-A4B (27 X 2026). MoE ~4B aktywnych, Google, Apache 2.0. Artificial Analysis index 17
+  # (Qwen3.6-35B-A3B 18, gpt-oss-120b 12). Q8_0 (25 GiB, praktycznie bez strat) na JEDNEJ karcie, Vulkan.
+  # llama-bench, 1 karta: Vulkan tg128 99.6 (ROCm 84.7); Q6_K_XL tylko +4 % (103.4) -> zostaje Q8_0.
+  # Draft MTP (unsloth MTP/mtp-...-Q8_0.gguf, 0.43 GiB) + ngram-mod, bench_spec: srednio 169.9 tok/s
+  # (sam MTP 162.6), narzedzia 182-191, kod 158-203, proza 127-132.
+  # Karta 2 -> moze dzialac rownoczesnie z qwen3.6-35b-a3b (karta 1), patrz grupa "agents" na dole.
+  # Sampling = zalecenie Google (temp 1.0, top_p 0.95, top_k 64).
+  "gemma-4-26b-a4b":
+    description: "Gemma 4 26B-A4B Q8_0, 1 GPU (Vulkan) + MTP + ngram, ~170 tok/s, 2 slots x 131k shared ctx"
+    cmd: |
+      /home/mkoniu/llama.cpp-0ce8cd1-vulkan/build/bin/llama-server --port ${PORT} --jinja --agent -fa on
+      -m /home/mkoniu/models/gemma-4-26b-a4b/gemma-4-26B-A4B-it-Q8_0.gguf
+      -md /home/mkoniu/models/gemma-4-26b-a4b/MTP/mtp-gemma-4-26B-A4B-it-Q8_0.gguf
+      --spec-type draft-mtp,ngram-mod
+      -ngl 999 --ctx-size 131072 --kv-unified --parallel 2 --batch-size 2048 --ubatch-size 2048
+      --temp 1.0 --top-p 0.95 --top-k 64 --min-p 0
+    env:
+      - "GGML_VK_VISIBLE_DEVICES=2"
+    ttl: 600
+    aliases:
+      - "gemma4"
+      - "gemma"
+
+# Grupy (27 X 2026). Domyslnie llama-swap trzyma jeden model naraz. Dwa modele agentowe z jednej karty
+# (qwen3.6 na karcie 1, gemma4 na karcie 2) moga byc zaladowane RAZEM (swap: false). exclusive: true =
+# zaladowanie modelu spoza grupy (np. qwen3.8, deepseek, pula x4 -- potrzebuja wszystkich kart) zwalnia grupe.
+groups:
+  agents:
+    swap: false
+    exclusive: true
+    members:
+      - "qwen3.6-35b-a3b"
+      - "gemma-4-26b-a4b"

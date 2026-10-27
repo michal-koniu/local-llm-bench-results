@@ -72,6 +72,9 @@ Speed: decode `tg128` and prompt `pp512` from the latest valid perf run of the s
 
 | Date | Model | Configs | Report |
 |---|---|---|---|
+| 2026-10-27 | qwen3.8-flash-next-ud-q5_k_xl | throughput | [20261027-180025](perf/20261027-180025/report.md) |
+| 2026-10-27 | gemma-4-26b-a4b | throughput | [20261027-175838](perf/20261027-175838/report.md) |
+| 2026-10-27 | qwen3.6-35b-a3b | throughput | [20261027-154622](perf/20261027-154622/report.md) |
 | 2026-09-30 | deepseek-v4-flash-0731 | thermal, throughput | [20260930-221230](perf/20260930-221230/report.md) |
 | 2026-09-30 | qwen3-next-80b | throughput | [20260930-125943](perf/20260930-125943/report.md) |
 | 2026-09-30 | gpt-oss-20b | throughput | [20260930-125802](perf/20260930-125802/report.md) |

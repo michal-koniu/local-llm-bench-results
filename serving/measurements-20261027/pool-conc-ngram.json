@@ -1,0 +1,50 @@
+[
+ {
+  "N": 1,
+  "rnd": 0,
+  "per_stream_tps": 116.8,
+  "aggregate_tps": 111.7,
+  "accept": 0.69,
+  "wall": 2.7
+ },
+ {
+  "N": 1,
+  "rnd": 1,
+  "per_stream_tps": 142.9,
+  "aggregate_tps": 137.1,
+  "accept": 0.42,
+  "wall": 2.2
+ },
+ {
+  "N": 4,
+  "rnd": 0,
+  "per_stream_tps": 191.2,
+  "aggregate_tps": 418.5,
+  "accept": 0.88,
+  "wall": 2.9
+ },
+ {
+  "N": 4,
+  "rnd": 1,
+  "per_stream_tps": 214.7,
+  "aggregate_tps": 543.0,
+  "accept": 0.79,
+  "wall": 2.2
+ },
+ {
+  "N": 12,
+  "rnd": 0,
+  "per_stream_tps": 109.6,
+  "aggregate_tps": 624.1,
+  "accept": 0.59,
+  "wall": 4.8
+ },
+ {
+  "N": 12,
+  "rnd": 1,
+  "per_stream_tps": 103.8,
+  "aggregate_tps": 567.0,
+  "accept": 0.56,
+  "wall": 5.3
+ }
+]

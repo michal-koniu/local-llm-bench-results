@@ -1,0 +1,82 @@
+[
+ {
+  "work": "translate",
+  "temp": 0.0,
+  "rep": 0,
+  "tokens": 300,
+  "tps": 35.4215460142468,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 8.75
+ },
+ {
+  "work": "toolcall",
+  "temp": 0.0,
+  "rep": 0,
+  "tokens": 81,
+  "tps": 33.54474911462828,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 3.0
+ },
+ {
+  "work": "code",
+  "temp": 0.0,
+  "rep": 0,
+  "tokens": 300,
+  "tps": 32.9368826881872,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 9.49
+ },
+ {
+  "work": "prose",
+  "temp": 0.0,
+  "rep": 0,
+  "tokens": 300,
+  "tps": 32.68685869121162,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 9.44
+ },
+ {
+  "work": "translate",
+  "temp": 1.0,
+  "rep": 0,
+  "tokens": 300,
+  "tps": 32.819040311989426,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 9.31
+ },
+ {
+  "work": "toolcall",
+  "temp": 1.0,
+  "rep": 0,
+  "tokens": 91,
+  "tps": 32.87236537122762,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 2.93
+ },
+ {
+  "work": "code",
+  "temp": 1.0,
+  "rep": 0,
+  "tokens": 300,
+  "tps": 32.64673287001905,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 9.56
+ },
+ {
+  "work": "prose",
+  "temp": 1.0,
+  "rep": 0,
+  "tokens": 300,
+  "tps": 32.631259240294085,
+  "draft_n": null,
+  "draft_acc": null,
+  "wall": 9.46
+ }
+]

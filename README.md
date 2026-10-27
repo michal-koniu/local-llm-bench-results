@@ -7,6 +7,8 @@ Quality and speed of open-weight LLMs, measured on one home rig with 4× AMD Rad
 ![Quality: local-llm-quality-bench](https://img.shields.io/badge/quality-local--llm--quality--bench-blue)
 ![Speed: local-llm-perf-bench](https://img.shields.io/badge/speed-local--llm--perf--bench-blue)
 
+➡️ **[MODEL-LINEUP.md](MODEL-LINEUP.md)**: the models served on the rig now, ranked by intelligence and measured speed, with ready-made OpenClaw / opencode settings.
+
 ➡️ **[RESULTS.md](RESULTS.md)**: the leaderboard (quality next to speed), findings, and every run with its date.
 
 Every number here comes from two open-source tools, and every run folder contains everything needed

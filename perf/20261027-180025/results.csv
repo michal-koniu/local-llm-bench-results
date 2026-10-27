@@ -1,0 +1,3 @@
+run_id,model,config,test,tok/s,spread,n,arch,params,quant,GiB,GPUs,split,PCIe (under load),cap W,fan curve,peak junction,peak VRAM,GPU W peak / mean,FA,batch/ubatch,KV,load,CPU profile,llama.cpp,ROCm,verdict
+20261027-180025,qwen3.8-flash-next-ud-q5_k_xl,throughput,pp512,1010.14,90.9%,3,qwen4exp,512x56B (MoE 512/10),UD-Q5_K_XL,147.4,"4×R9700 (0,1,2,3)",layer 1.00/1.00/1.00/1.00,x8/x4/x8/x4 Gen5,250,mixed,42 °C,36 °C,392 / 114,on,2048/512,f16/f16,dio,balanced,e86f5fd,7.2.4,WITH_CAVEAT
+20261027-180025,qwen3.8-flash-next-ud-q5_k_xl,throughput,tg128,34.00,9.2%,3,qwen4exp,512x56B (MoE 512/10),UD-Q5_K_XL,147.4,"4×R9700 (0,1,2,3)",layer 1.00/1.00/1.00/1.00,x8/x4/x8/x4 Gen5,250,mixed,42 °C,36 °C,392 / 114,on,2048/512,f16/f16,dio,balanced,e86f5fd,7.2.4,WITH_CAVEAT
