@@ -1,0 +1,17 @@
+# Small nginx in front of a vLLM model, added by run-compose.sh when CHAT_MODEL is set.
+# Why: llama-swap's model link opens /upstream/<model>/, and vLLM has no web page there ("Not Found").
+# The front listens on PORT (what llama-swap talks to) and passes every API call to vLLM on BPORT unchanged;
+# only "/" is answered with a page that opens CHAT_MODEL in Open WebUI (port 3000 on the same host).
+services:
+  front:
+    image: nginx:1.27-alpine
+    container_name: ${NAME}-front
+    restart: "no"
+    network_mode: host
+    environment:
+      PORT: ${PORT}
+      BPORT: ${BPORT}
+      CHAT_MODEL: ${CHAT_MODEL}
+      NGINX_ENTRYPOINT_QUIET_LOGS: "1"
+    volumes:
+      - ./front.conf.template:/etc/nginx/templates/default.conf.template:ro

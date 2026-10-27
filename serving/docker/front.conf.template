@@ -1,0 +1,25 @@
+# nginx config for front.compose.yml; ${PORT}, ${BPORT} and ${CHAT_MODEL} are filled in when the container starts.
+server {
+    listen 127.0.0.1:${PORT};
+    access_log off;
+
+    # The page llama-swap's model link opens: go to this model's chat in Open WebUI.
+    location = / {
+        default_type text/html;
+        return 200 '<!doctype html><meta charset="utf-8"><title>${CHAT_MODEL}</title>
+<p>${CHAT_MODEL} runs on vLLM, which has no chat page of its own. Opening it in <a id="w" href="#">Open WebUI</a>...</p>
+<script>var u=location.protocol+"//"+location.hostname+":3000/?model=${CHAT_MODEL}";document.getElementById("w").href=u;location.replace(u);</script>';
+    }
+
+    # Everything else (/v1/..., /health, /metrics) goes to vLLM as is, streamed without buffering.
+    location / {
+        proxy_pass http://127.0.0.1:${BPORT};
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_buffering off;
+        proxy_request_buffering off;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        client_max_body_size 0;
+    }
+}
