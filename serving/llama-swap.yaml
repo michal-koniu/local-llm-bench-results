@@ -60,7 +60,7 @@ models:
     description: "Polish-language model (dense 11B, Q8_0) for Polish text. GPU 0. ~48 tok/s (37 at 14k ctx). 32k ctx. Starts in seconds. Unloads everything else."
     # context+skills source (auto-detect): ~/.config/llama-swap/AGENT_BOOTSTRAP.md + ~/ai_skills/INDEX.md
     cmd: |
-      /home/mkoniu/llama.cpp-0ce8cd1-vulkan/build/bin/llama-server --port ${PORT} --jinja --agent -fa on --ui-config-file /home/mkoniu/.config/llama-swap/ui-defaults.json
+      /home/mkoniu/llama.cpp-0ce8cd1-vulkan/build/bin/llama-server --port ${PORT} --jinja --agent -fa on --ui-config-file /home/mkoniu/.config/llama-swap/ui/bielik-11b.json --tools all --mcp-servers-config /home/mkoniu/.config/llama-swap/tools/mcp-web.json --cors-origins http://192.168.0.39:8080,http://localhost:8080,http://127.0.0.1:8080
       -m /home/mkoniu/models/bielik-11b/Bielik-11B-v3.0-Instruct.Q8_0.gguf
       -ngl 999 --ctx-size 32768 --load-mode dio
       --ubatch-size 2048
@@ -92,7 +92,7 @@ models:
     name: "Fallback: Qwen3.8-Flash-Next on llama.cpp (4 GPU)"
     description: "Same smartest model on llama.cpp - use only if the radiance version misbehaves. All 4 GPUs, ~45-51 tok/s, 131k ctx. Unloads everything else."
     cmd: |
-      /home/mkoniu/llama.cpp-e86f5fd/build/bin/llama-server --port ${PORT} --jinja --agent -fa on --ui-config-file /home/mkoniu/.config/llama-swap/ui-defaults.json
+      /home/mkoniu/llama.cpp-e86f5fd/build/bin/llama-server --port ${PORT} --jinja --agent -fa on --ui-config-file /home/mkoniu/.config/llama-swap/ui/qwen3.8-flash-next-llamacpp.json --tools all --mcp-servers-config /home/mkoniu/.config/llama-swap/tools/mcp-web.json --cors-origins http://192.168.0.39:8080,http://localhost:8080,http://127.0.0.1:8080
       -m /home/mkoniu/models/qwen3.8-flash-next/UD-Q5_K_XL/Qwen3.8-Flash-Next-UD-Q5_K_XL-00001-of-00006.gguf
       -md /home/mkoniu/models/qwen3.8-flash-next/mtp-Qwen3.8-Flash-Next-Q8_0.gguf
       --spec-type draft-mtp --spec-draft-n-max 2
@@ -115,7 +115,7 @@ models:
     name: "#3 Gemma 4 26B-A4B - 1 GPU (llama.cpp Vulkan)"
     description: "Google MoE, good general/agent model on ONE card (GPU 2). ~135-145 tok/s chat, ~170 code/tool turns (MTP + n-gram draft); 2 agents ~93-116 each. 2 slots x 131k ctx. Starts in ~20 s. Unloads everything else."
     cmd: |
-      /home/mkoniu/llama.cpp-0ce8cd1-vulkan/build/bin/llama-server --port ${PORT} --jinja --agent -fa on --ui-config-file /home/mkoniu/.config/llama-swap/ui-defaults.json
+      /home/mkoniu/llama.cpp-0ce8cd1-vulkan/build/bin/llama-server --port ${PORT} --jinja --agent -fa on --ui-config-file /home/mkoniu/.config/llama-swap/ui/gemma-4-26b-a4b.json --tools all --mcp-servers-config /home/mkoniu/.config/llama-swap/tools/mcp-web.json --cors-origins http://192.168.0.39:8080,http://localhost:8080,http://127.0.0.1:8080
       -m /home/mkoniu/models/gemma-4-26b-a4b/gemma-4-26B-A4B-it-Q8_0.gguf
       -md /home/mkoniu/models/gemma-4-26b-a4b/MTP/mtp-gemma-4-26B-A4B-it-Q8_0.gguf
       --spec-type draft-mtp,ngram-mod --spec-draft-n-max 4
