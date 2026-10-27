@@ -1,6 +1,6 @@
 # Qwen3.6-35B-A3B FP8 on vLLM "Radiance" (R9700 / gfx1201 build), started and stopped by llama-swap.
 # Based on ~/radiance-vllm-mxfp4/docker-compose.yml; differences are marked "CHANGED".
-# Variables come from llama-swap (see config.yaml): PORT, NAME, GPUS, TP, DP, SEQS, KVDT, MAXLEN.
+# Variables come from llama-swap (see config.yaml) and run-compose.sh: BPORT, NAME, GPUS, TP, DP, SEQS, KVDT, MAXLEN.
 name: ${NAME:-qwen36-vllm}
 services:
   vllm:
@@ -65,7 +65,7 @@ services:
     cap_add: [SYS_PTRACE, SYS_NICE]
     security_opt: [seccomp=unconfined]
     ipc: host
-    ports: ["127.0.0.1:${PORT:-8000}:8000"]          # CHANGED: localhost only; llama-swap is the LAN entry point
+    ports: ["127.0.0.1:${BPORT:-8000}:8000"]         # CHANGED: localhost only; behind front.compose.yml (PORT)
     volumes:
       - /home/mkoniu/models:/models:ro
       - /home/mkoniu/radiance-vllm-mxfp4/vllm-cache:/cache

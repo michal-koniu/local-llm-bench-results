@@ -180,7 +180,7 @@ models:
     description: "Fast, capable agent/coding model. vLLM, FP8 weights, GPU 2+3. ~140-170 tok/s 1 agent, 8 agents ~90 each (~720 total). 131k ctx. Cold start ~2-3 min. Runs together with qwen3.8-flash-next (group duo)."
     cmd: |
       /home/mkoniu/.config/llama-swap/vllm/run-compose.sh /home/mkoniu/.config/llama-swap/vllm/qwen3.6-fp8.compose.yml
-      PORT=${PORT} NAME=qwen36-vllm GPUS=2,3 TP=2 SEQS=8 KVDT=auto MAXLEN=131072
+      PORT=${PORT} NAME=qwen36-vllm GPUS=2,3 TP=2 SEQS=8 KVDT=auto MAXLEN=131072 CHAT_MODEL=qwen3.6-35b-a3b
     proxy: http://127.0.0.1:${PORT}
     checkEndpoint: /health
     useModelName: qwen3.6-35b-a3b
@@ -196,7 +196,7 @@ models:
     description: "For 8-16 parallel agents. vLLM tensor-parallel on all 4 GPUs. ~140-245 tok/s 1 agent, 8 agents ~103 each (~830 total), 12 agents ~80-85 each (~950-1020 total). 131k ctx. Cold start ~2-3 min. Unloads everything else."
     cmd: |
       /home/mkoniu/.config/llama-swap/vllm/run-compose.sh /home/mkoniu/.config/llama-swap/vllm/qwen3.6-fp8.compose.yml
-      PORT=${PORT} NAME=qwen36-vllm-x4 GPUS=0,1,2,3 TP=4 SEQS=16 KVDT=auto MAXLEN=131072
+      PORT=${PORT} NAME=qwen36-vllm-x4 GPUS=0,1,2,3 TP=4 SEQS=16 KVDT=auto MAXLEN=131072 CHAT_MODEL=qwen3.6-35b-a3b-x4
     proxy: http://127.0.0.1:${PORT}
     checkEndpoint: /health
     useModelName: qwen3.6-35b-a3b

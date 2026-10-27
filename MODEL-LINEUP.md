@@ -110,8 +110,10 @@ window that still fits when several agents are long at once:
 
 ### User interfaces
 - **llama-swap UI** — `http://192.168.0.39:8080/ui`: model list with the descriptions from section 1, load/unload,
-  logs, a Playground chat that works with every model. For llama.cpp models, the model's own chat UI is at
-  `http://192.168.0.39:8080/upstream/<name>/`.
+  logs, a Playground chat that works with every model. Clicking a model opens `http://192.168.0.39:8080/upstream/<name>/`:
+  for llama.cpp models that is the model's own chat UI, for radiance models the engine's dashboard (speed, sessions),
+  and for vLLM models (no page of their own; before 2026-10-27 this gave *"Not Found"*) it jumps to that model's chat
+  in Open WebUI — see "vLLM front" in section 5.
   *"Agentic turn limit reached"* comes from that llama.cpp chat UI (Settings → Tools → **Agentic turns**, per
   browser, default 100). The server default is now 10,000 (`~/.config/llama-swap/ui-defaults.json`), but a browser
   that already saved settings keeps its value — change it there once.
@@ -241,6 +243,13 @@ wrappers make a container behave like such a command:
   Used by `qwen3.6-*` (vLLM) and `qwen3.8-flash-next*` (radiance).
 - `~/.config/llama-swap/vllm/run-docker.sh NAME launcher …` — for launchers that start one named container
   themselves (Radiance's `serve-tp2.sh`); stops that container on exit. Used by the 27B recipe below.
+
+**vLLM front** — vLLM has no web page, so llama-swap's model link (`/upstream/<name>/`) answered *"Not Found"*.
+An entry with `CHAT_MODEL=<llama-swap id>` in its `cmd` makes `run-compose.sh` also start
+`vllm/front.compose.yml`: a small nginx container (`<NAME>-front`) on `PORT` that passes every API call to vLLM
+(now on `BPORT` = `PORT`+10000) unbuffered, and answers only `/` with a page that opens
+`http://<host>:3000/?model=<id>` (Open WebUI). Measured through the front: same speed (chat 139–146 tok/s),
+streaming and tool calls OK. Remove `CHAT_MODEL=` from an entry to go back to vLLM directly on `PORT`.
 
 The compose files take everything that differs between entries as variables (`GPUS`, `TP`, `SEQS`, `KVDT`,
 `HOSTPOOL`, `NGRAM`, `RADFILE`, …), so a new variant is a new llama-swap entry with other values, e.g. Flash-Next on
