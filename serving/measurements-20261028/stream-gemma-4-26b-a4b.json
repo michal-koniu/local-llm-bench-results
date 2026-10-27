@@ -1,0 +1,100 @@
+{
+ "model": "gemma-4-26b-a4b",
+ "sampling": {
+  "temperature": 1.0,
+  "top_p": 0.95,
+  "top_k": 64
+ },
+ "url": "http://localhost:8080",
+ "date": "2026-10-27 22:28",
+ "results": [
+  {
+   "model": "gemma-4-26b-a4b",
+   "prompt": "chat",
+   "conc": 1,
+   "rep": 0,
+   "per_stream": 135.3,
+   "total": 135.3,
+   "ttft": 21.46,
+   "gen": 700,
+   "prompt_tokens": 46
+  },
+  {
+   "model": "gemma-4-26b-a4b",
+   "prompt": "chat",
+   "conc": 1,
+   "rep": 1,
+   "per_stream": 144.7,
+   "total": 144.7,
+   "ttft": 0.17,
+   "gen": 700,
+   "prompt_tokens": 46
+  },
+  {
+   "model": "gemma-4-26b-a4b",
+   "prompt": "code16k",
+   "conc": 1,
+   "rep": 0,
+   "per_stream": 175.3,
+   "total": 175.3,
+   "ttft": 4.56,
+   "gen": 700,
+   "prompt_tokens": 16154
+  },
+  {
+   "model": "gemma-4-26b-a4b",
+   "prompt": "code16k",
+   "conc": 1,
+   "rep": 1,
+   "per_stream": 168.6,
+   "total": 168.6,
+   "ttft": 0.18,
+   "gen": 700,
+   "prompt_tokens": 16154
+  },
+  {
+   "model": "gemma-4-26b-a4b",
+   "prompt": "chat",
+   "conc": 2,
+   "rep": 0,
+   "per_stream": 92.8,
+   "total": 185.7,
+   "ttft": 0.39,
+   "gen": 700,
+   "prompt_tokens": 46
+  },
+  {
+   "model": "gemma-4-26b-a4b",
+   "prompt": "chat",
+   "conc": 2,
+   "rep": 1,
+   "per_stream": 92.8,
+   "total": 185.7,
+   "ttft": 0.85,
+   "gen": 700,
+   "prompt_tokens": 46
+  },
+  {
+   "model": "gemma-4-26b-a4b",
+   "prompt": "code16k",
+   "conc": 2,
+   "rep": 0,
+   "per_stream": 92.7,
+   "total": 185.4,
+   "ttft": 1.4,
+   "gen": 700,
+   "prompt_tokens": 16154
+  },
+  {
+   "model": "gemma-4-26b-a4b",
+   "prompt": "code16k",
+   "conc": 2,
+   "rep": 1,
+   "per_stream": 116.4,
+   "total": 232.8,
+   "ttft": 0.92,
+   "gen": 700,
+   "prompt_tokens": 16154
+  }
+ ]
+}

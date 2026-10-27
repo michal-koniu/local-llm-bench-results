@@ -1,0 +1,4 @@
+qwen3.6-35b-a3b-x4               chat     conc 12 rep 0:   84.9 tok/s per stream, 1019.3 total, ttft 141.17s, prompt 42
+qwen3.6-35b-a3b-x4               chat     conc 12 rep 1:   85.5 tok/s per stream, 1025.8 total, ttft  0.11s, prompt 42
+qwen3.6-35b-a3b-x4               code16k  conc 12 rep 0:   77.8 tok/s per stream,  933.1 total, ttft  2.03s, prompt 13634
+qwen3.6-35b-a3b-x4               code16k  conc 12 rep 1:   79.6 tok/s per stream,  954.8 total, ttft  0.17s, prompt 13634

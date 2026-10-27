@@ -1,0 +1,144 @@
+{
+ "model": "qwen3.8-flash-next",
+ "sampling": {
+  "temperature": 1.0,
+  "top_p": 0.95,
+  "top_k": 20
+ },
+ "url": "http://localhost:8080",
+ "date": "2026-10-27 22:20",
+ "results": [
+  {
+   "model": "qwen3.8-flash-next",
+   "prompt": "chat",
+   "conc": 1,
+   "rep": 0,
+   "per_stream": 117.9,
+   "total": 117.9,
+   "ttft": 28.72,
+   "gen": 700,
+   "prompt_tokens": 84
+  },
+  {
+   "model": "qwen3.8-flash-next",
+   "prompt": "chat",
+   "conc": 1,
+   "rep": 1,
+   "per_stream": 143.9,
+   "total": 143.9,
+   "ttft": 0.06,
+   "gen": 700,
+   "prompt_tokens": 84
+  },
+  {
+   "model": "qwen3.8-flash-next",
+   "prompt": "code16k",
+   "conc": 1,
+   "rep": 0,
+   "per_stream": 138.5,
+   "total": 138.5,
+   "ttft": 3.72,
+   "gen": 700,
+   "prompt_tokens": 13672
+  },
+  {
+   "model": "qwen3.8-flash-next",
+   "prompt": "code16k",
+   "conc": 1,
+   "rep": 1,
+   "per_stream": 133.2,
+   "total": 133.2,
+   "ttft": 0.05,
+   "gen": 700,
+   "prompt_tokens": 13672
+  },
+  {
+   "model": "qwen3.8-flash-next",
+   "prompt": "chat",
+   "conc": 4,
+   "rep": 0,
+   "per_stream": 88.2,
+   "total": 352.9,
+   "ttft": 0.18,
+   "gen": 700,
+   "prompt_tokens": 84
+  },
+  {
+   "model": "qwen3.8-flash-next",
+   "prompt": "chat",
+   "conc": 4,
+   "rep": 1,
+   "per_stream": 90.1,
+   "total": 360.4,
+   "ttft": 0.08,
+   "gen": 700,
+   "prompt_tokens": 84
+  },
+  {
+   "model": "qwen3.8-flash-next",
+   "prompt": "code16k",
+   "conc": 4,
+   "rep": 0,
+   "per_stream": 89.6,
+   "total": 358.3,
+   "ttft": 0.14,
+   "gen": 700,
+   "prompt_tokens": 13672
+  },
+  {
+   "model": "qwen3.8-flash-next",
+   "prompt": "code16k",
+   "conc": 4,
+   "rep": 1,
+   "per_stream": 88.0,
+   "total": 352.0,
+   "ttft": 0.07,
+   "gen": 700,
+   "prompt_tokens": 13672
+  },
+  {
+   "model": "qwen3.8-flash-next",
+   "prompt": "chat",
+   "conc": 8,
+   "rep": 0,
+   "per_stream": 69.0,
+   "total": 551.7,
+   "ttft": 0.06,
+   "gen": 700,
+   "prompt_tokens": 84
+  },
+  {
+   "model": "qwen3.8-flash-next",
+   "prompt": "chat",
+   "conc": 8,
+   "rep": 1,
+   "per_stream": 67.6,
+   "total": 541.1,
+   "ttft": 0.16,
+   "gen": 700,
+   "prompt_tokens": 84
+  },
+  {
+   "model": "qwen3.8-flash-next",
+   "prompt": "code16k",
+   "conc": 8,
+   "rep": 0,
+   "per_stream": 69.9,
+   "total": 559.5,
+   "ttft": 0.19,
+   "gen": 700,
+   "prompt_tokens": 13672
+  },
+  {
+   "model": "qwen3.8-flash-next",
+   "prompt": "code16k",
+   "conc": 8,
+   "rep": 1,
+   "per_stream": 69.1,
+   "total": 553.2,
+   "ttft": 0.17,
+   "gen": 700,
+   "prompt_tokens": 13672
+  }
+ ]
+}

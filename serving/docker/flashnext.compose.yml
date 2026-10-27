@@ -1,0 +1,33 @@
+# Qwen3.8-Flash-Next on the "radiance" engine (C++/HIP inference server for RDNA4, by StillDeadcode),
+# started and stopped by llama-swap through ../vllm/run-compose.sh.
+# Based on ~/radiance-engine/deploy/compose/flashnext.yaml + common.yaml; differences marked "CHANGED".
+# Variables (set by llama-swap): PORT, NAME, GPUS, TP, WIRE, KVDT, SEQS, MAXLEN, NSPEC, HOSTPOOL, NGRAM, MODELDIR, RADFILE.
+# RAM: every card pins its own HOSTPOOL MiB; NGRAM=ram copies the ~47 GiB n-gram table into RAM, disk reads it through a cache.
+name: ${NAME:-radiance-flashnext}
+services:
+  radiance:
+    image: stilldeadcode/radiance:1.13.0           # CHANGED: pinned version instead of :latest
+    container_name: ${NAME:-radiance-flashnext}
+    restart: "no"                                  # CHANGED: llama-swap decides when it runs
+    init: true
+    network_mode: host
+    user: "1000:1000"
+    devices: [/dev/kfd, /dev/dri]
+    group_add: ["992", "44"]                       # render, video
+    security_opt: [seccomp=unconfined]             # io_uring reads of the n-gram table, NUMA calls
+    ulimits: { memlock: -1 }                       # the pinned host pool for streamed experts
+    environment:
+      HIP_VISIBLE_DEVICES: "${GPUS:-0,1}"
+    volumes:
+      - ${MODELDIR:-/home/mkoniu/models/qwen3.8-flash-next/radiance}:/models:ro
+      - /home/mkoniu/radiance-engine/deploy/chat-templates:/chat-templates:ro
+    stop_grace_period: 60s
+    command: >
+      --model /models/${RADFILE:-qwen3.8-next-flash-fp8-iq4r-moe.rad}
+      --host 127.0.0.1 --port ${PORT:-8000}
+      --tp ${TP:-2} --tp-wire ${WIRE:-exact} --max-num-seqs ${SEQS:-8} --max-model-len ${MAXLEN:-200000}
+      --placement expert_tiered --host-pool-mib ${HOSTPOOL:-8192} --gpu-headroom-mib 96
+      --ngram-placement ${NGRAM:-disk}
+      --kv-cache-dtype ${KVDT:-bf16}
+      --prefix-cache-mib 4096
+      --num-speculative-tokens ${NSPEC:-3} --max-num-batched-tokens 2048

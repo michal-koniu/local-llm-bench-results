@@ -1,0 +1,100 @@
+{
+ "model": "qwen3.6-35b-a3b",
+ "sampling": {
+  "temperature": 0.6,
+  "top_p": 0.95,
+  "top_k": 20
+ },
+ "url": "http://localhost:8080",
+ "date": "2026-10-27 22:23",
+ "results": [
+  {
+   "model": "qwen3.6-35b-a3b",
+   "prompt": "chat",
+   "conc": 1,
+   "rep": 0,
+   "per_stream": 138.4,
+   "total": 138.4,
+   "ttft": 108.35,
+   "gen": 700,
+   "prompt_tokens": 42
+  },
+  {
+   "model": "qwen3.6-35b-a3b",
+   "prompt": "chat",
+   "conc": 1,
+   "rep": 1,
+   "per_stream": 147.2,
+   "total": 147.2,
+   "ttft": 0.04,
+   "gen": 700,
+   "prompt_tokens": 42
+  },
+  {
+   "model": "qwen3.6-35b-a3b",
+   "prompt": "code16k",
+   "conc": 1,
+   "rep": 0,
+   "per_stream": 159.2,
+   "total": 159.2,
+   "ttft": 1.0,
+   "gen": 700,
+   "prompt_tokens": 13634
+  },
+  {
+   "model": "qwen3.6-35b-a3b",
+   "prompt": "code16k",
+   "conc": 1,
+   "rep": 1,
+   "per_stream": 171.9,
+   "total": 171.9,
+   "ttft": 0.2,
+   "gen": 700,
+   "prompt_tokens": 13634
+  },
+  {
+   "model": "qwen3.6-35b-a3b",
+   "prompt": "chat",
+   "conc": 8,
+   "rep": 0,
+   "per_stream": 87.4,
+   "total": 698.9,
+   "ttft": 0.14,
+   "gen": 700,
+   "prompt_tokens": 42
+  },
+  {
+   "model": "qwen3.6-35b-a3b",
+   "prompt": "chat",
+   "conc": 8,
+   "rep": 1,
+   "per_stream": 89.9,
+   "total": 718.9,
+   "ttft": 0.1,
+   "gen": 700,
+   "prompt_tokens": 42
+  },
+  {
+   "model": "qwen3.6-35b-a3b",
+   "prompt": "code16k",
+   "conc": 8,
+   "rep": 0,
+   "per_stream": 92.5,
+   "total": 740.3,
+   "ttft": 0.74,
+   "gen": 700,
+   "prompt_tokens": 13634
+  },
+  {
+   "model": "qwen3.6-35b-a3b",
+   "prompt": "code16k",
+   "conc": 8,
+   "rep": 1,
+   "per_stream": 90.4,
+   "total": 723.1,
+   "ttft": 1.41,
+   "gen": 700,
+   "prompt_tokens": 13634
+  }
+ ]
+}

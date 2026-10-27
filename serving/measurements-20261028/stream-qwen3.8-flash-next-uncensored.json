@@ -1,0 +1,56 @@
+{
+ "model": "qwen3.8-flash-next-uncensored",
+ "sampling": {
+  "temperature": 1.0,
+  "top_p": 0.95,
+  "top_k": 20
+ },
+ "url": "http://localhost:8080",
+ "date": "2026-10-27 22:21",
+ "results": [
+  {
+   "model": "qwen3.8-flash-next-uncensored",
+   "prompt": "chat",
+   "conc": 1,
+   "rep": 0,
+   "per_stream": 121.9,
+   "total": 121.9,
+   "ttft": 27.08,
+   "gen": 700,
+   "prompt_tokens": 84
+  },
+  {
+   "model": "qwen3.8-flash-next-uncensored",
+   "prompt": "chat",
+   "conc": 1,
+   "rep": 1,
+   "per_stream": 144.6,
+   "total": 144.6,
+   "ttft": 0.06,
+   "gen": 700,
+   "prompt_tokens": 84
+  },
+  {
+   "model": "qwen3.8-flash-next-uncensored",
+   "prompt": "code16k",
+   "conc": 1,
+   "rep": 0,
+   "per_stream": 117.4,
+   "total": 117.4,
+   "ttft": 3.63,
+   "gen": 700,
+   "prompt_tokens": 13672
+  },
+  {
+   "model": "qwen3.8-flash-next-uncensored",
+   "prompt": "code16k",
+   "conc": 1,
+   "rep": 1,
+   "per_stream": 139.7,
+   "total": 139.7,
+   "ttft": 0.05,
+   "gen": 700,
+   "prompt_tokens": 13672
+  }
+ ]
+}
