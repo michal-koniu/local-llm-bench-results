@@ -38,14 +38,14 @@
 #
 # healthCheckTimeout: duze modele (dio) moga potrzebowac >120 s zanim /health
 # zwroci 200. 300 s zostawione celowo.
-healthCheckTimeout: 300
+healthCheckTimeout: 900
 #
 # 4 karty R9700 (30 IX 2026, rocminfo + amd-smi):
 #   0 = 0000:03:00.0 (x8), 1 = 0000:06:00.0 (x4), 2 = 0000:09:00.0 (x8), 3 = 0000:19:00.0 (x4).
 # iGPU Raphael (0000:1a:00.0) jest index 4. NIGDY nie wpisuj go do HIP_VISIBLE_DEVICES.
 
 macros:
-  server: "/home/mkoniu/llama.cpp/build/bin/llama-server --port ${PORT} --jinja --agent -fa on"
+  server: "/home/mkoniu/llama.cpp/build/bin/llama-server --port ${PORT} --jinja --agent -fa on --ui-config-file /home/mkoniu/.config/llama-swap/ui-defaults.json"
 
 models:
   # Bielik 11B v3.0 (dense, polski). ubatch 2048: +8 % promptu vs 512.
@@ -56,136 +56,24 @@ models:
   # ("Failed to initialize samplers") -- "auto" dziala; Bielik bywa nadgorliwy
   # (wola narzedzie tez przy pytaniu "ile to 2+2"). Do agentow lepszy gpt-oss/qwen.
   "bielik-11b":
+    name: "#4 Bielik 11B - Polish (llama.cpp Vulkan, 1 GPU)"
+    description: "Polish-language model (dense 11B, Q8_0) for Polish text. GPU 0. ~48 tok/s (37 at 14k ctx). 32k ctx. Starts in seconds. Unloads everything else."
     # context+skills source (auto-detect): ~/.config/llama-swap/AGENT_BOOTSTRAP.md + ~/ai_skills/INDEX.md
-    description: "Context: ~/.config/llama-swap/AGENT_BOOTSTRAP.md | Skills: ~/ai_skills/INDEX.md (auto-detect each session)"
     cmd: |
-      ${server}
+      /home/mkoniu/llama.cpp-0ce8cd1-vulkan/build/bin/llama-server --port ${PORT} --jinja --agent -fa on --ui-config-file /home/mkoniu/.config/llama-swap/ui-defaults.json
       -m /home/mkoniu/models/bielik-11b/Bielik-11B-v3.0-Instruct.Q8_0.gguf
       -ngl 999 --ctx-size 32768 --load-mode dio
       --ubatch-size 2048
       --chat-template-file /home/mkoniu/.config/llama-swap/templates/bielik-11b-tools.jinja
     env:
-      - "HIP_VISIBLE_DEVICES=0"
+      - "GGML_VK_VISIBLE_DEVICES=0"
     ttl: 600
     aliases:
       - "bielik"
 
-  # DeepSeek-V4-Flash-0731 -- OFICJALNE wydanie (31 VII 2026). 30 IX zastapil wersje
-  # preview (usunieta z konfiguracji i z dysku); przejal jej nazwy, wiec klienci
-  # uzywajacy "deepseek-v4-flash" / "deepseek" dostaja teraz 0731. Ta sama architektura (deepseek4, 284B / 13B aktywnych), duzo
-  # lepsza praca agentowa (wg DeepSeek: DeepSWE 7.3 -> 54.4, Terminal-Bench 2.1 82.7).
-  # Unsloth UD-IQ3_XXS, 4 shardy, 104.2 GB (sumy SHA256 sprawdzone 30 IX).
-  # Kompresowana uwaga: KV jest tanie, ctx 512k sprawdzone zaladowaniem. --parallel 4 (od 11 X) =
-  # 4 agentow naraz, po 131k kontekstu; 1 agent 22.6 tok/s, 4 agentow po 13.6 (lacznie 54).
-  # ubatch 1024 (+35 % promptu; 2048 -15 %, 4096 -58 %).
-  # Podzial 0.97,1,0.92,1.11: przy 0.97,1,0.97,1.06 karta 2 miala tylko 0.45 GB wolne;
-  # teraz min. 1.4 GB na kazdej (43 duze warstwy -- lepiej sie nie da wyrownac).
-  # Zmierzone 30 IX (bench.py, 250 W): pp512 560, pp4096 1089, tg128 24.7 tok/s.
-  # 19 X 2026: SPECULATIVE DECODING (DSpark). Oficjalna glowica draftu DeepSeeka z checkpointu 0731
-  # (skonwertowana do GGUF, 10.9 GB, lezy w models/.../DSpark/) zgaduje 3 tokeny naprzod, a model
-  # glowny sprawdza je jednym przebiegiem. Wynik bez zmiany jakosci (kazdy token weryfikuje model).
-  # Zmierzone, ten sam uklad 4 x 131k: 1 agent 23.1 -> 33.4 tok/s (+45 %), 2 agenty lacznie
-  # 38 -> 46 (+22 %), 4 agenty lacznie 50.7 -> 47.0 (-7 %, GPU juz nasycone batchingiem).
-  # Cena: (1) pamiec -- draft zjada ~4 GB/karta, wiec ubatch 1024 -> 512 i KV draftu q8_0, zeby karta 0
-  # miala >= 0.8 GB wolnego (przy 1024 zostawalo 0.15 GB); (2) PREFILL (przetwarzanie promptu) spada
-  # z ~960 do ~490 tok/s, bo draft tez musi przeczytac prompt -- do zadan z ogromnymi promptami i
-  # krotka odpowiedzia uzyj modelu "deepseek-v4-flash-0731-nospec".
-  # Draft miesci sie w VRAM bez zmiany ctx/parallel. Pelny opis, strojenie i procedura dla
-  # innych modeli: ~/Desktop/local_agents_project/SPECULATIVE-DECODING.md i PROCEDURA-SPEC-DECODING.md.
-  # Powrot do starego zachowania: model "deepseek-v4-flash-0731-nospec" (ten sam uklad, bez draftu).
-  # 19 X 2026 (wieczor): TRYB TENSOR + NOWY llama.cpp (0ce8cd1, osobny katalog ~/llama.cpp-0ce8cd1) + DSpark.
-  # Wszystkie 4 karty licza kazdy token rownolegle (zamiast pipeline'u warstw) -- 1 agent ~50 tok/s
-  # (bylo 23.5), 2 agenty lacznie ~63. 2 sloty x 98304 ctx (przy 4 slotach brak VRAM w trybie tensor:
-  # KV jest tu nieskwantyzowany). --fit i nierowny --tensor-split NIE dzialaja w trybie tensor
-  # (zawieszenie przy ladowaniu). Stary uklad (warstwy + DSpark, 4 sloty): "...-layerspec".
-  # Szczegoly, pomiary i cofanie: SPECULATIVE-DECODING.md. Kopia configu: config.yaml.bak-20261019-przed-tensor
-  "deepseek-v4-flash-0731":
-    # context+skills source (auto-detect): ~/.config/llama-swap/AGENT_BOOTSTRAP.md + ~/ai_skills/INDEX.md
-    description: "Context: ~/.config/llama-swap/AGENT_BOOTSTRAP.md | Skills: ~/ai_skills/INDEX.md (auto-detect each session)"
-    cmd: |
-      /home/mkoniu/llama.cpp-0ce8cd1/build/bin/llama-server --port ${PORT} --jinja --agent -fa on
-      -m /home/mkoniu/models/DeepSeek-V4-Flash-0731-GGUF/UD-IQ3_XXS/DeepSeek-V4-Flash-0731-UD-IQ3_XXS-00001-of-00004.gguf
-      -md /home/mkoniu/models/DeepSeek-V4-Flash-0731-GGUF/DSpark/DeepSeek-V4-Flash-0731-DSpark.gguf
-      --spec-type draft-dspark --spec-draft-n-max 3 --spec-draft-p-min 0
-      --split-mode tensor -ctk f16 -ctv f16
-      -ngl 999 --ctx-size 196608 --load-mode dio
-      --parallel 2 --ubatch-size 512
-      --temp 1.0 --top-p 1.0 --top-k 0 --min-p 0
-    env:
-      - "HIP_VISIBLE_DEVICES=0,1,2,3"
-    ttl: 600
-    aliases:
-      - "deepseek-v4-flash"
-      - "deepseek"
-      - "deepseek-v4"
-      - "deepseek-0731"
-      - "deepseek-v4-0731"
-
-  # Stary produkcyjny uklad (bez draftu) -- do porownan A/B i jako awaryjny powrot.
-  "deepseek-v4-flash-0731-nospec":
-    description: "DeepSeek 0731 BEZ speculative decoding (stary uklad produkcyjny)"
-    cmd: |
-      ${server}
-      -m /home/mkoniu/models/DeepSeek-V4-Flash-0731-GGUF/UD-IQ3_XXS/DeepSeek-V4-Flash-0731-UD-IQ3_XXS-00001-of-00004.gguf
-      -ngl 999 --split-mode layer --tensor-split 0.97,1,0.92,1.11 --ctx-size 524288 --load-mode dio
-      --parallel 4 --ubatch-size 1024
-      --temp 1.0 --top-p 1.0 --top-k 0 --min-p 0
-    env:
-      - "HIP_VISIBLE_DEVICES=0,1,2,3"
-    ttl: 600
-
   # ---------------------------------------------------------------------------------------------
-  # Qwen3.6-35B-A3B (27 X 2026). MoE 256/8, 3B aktywnych, hybryda Gated DeltaNet (tylko 10/40
-  # warstw ma KV -> ~20 KiB/token). Unsloth UD-Q5_K_XL, 24.8 GiB, miesci sie na JEDNEJ karcie.
-  # Backend VULKAN (osobny build ~/llama.cpp-0ce8cd1-vulkan, ten sam commit co ROCm): na 1 karcie
-  # tg128 111.3 vs 86.7 tok/s na ROCm (+28 %), przy 16k kontekstu 101.8 vs 81.4. Prompt z ubatch 2048:
-  # 4158 tok/s (ROCm domyslnie 3589). Q4_K_XL dawal tylko +3 % (114.7) -- zostaje Q5 (jakosc).
-  # Wybor karty w Vulkanie: GGML_VK_VISIBLE_DEVICES (HIP_VISIBLE_DEVICES tu NIE dziala).
-  # Sampling = zalecenie Qwena dla "thinking, precise coding" (klient moze nadpisac).
-  # --spec-type ngram-mod: zgadywanie z powtorzen w kontekscie (bez modelu draftu). bench_spec: bez
-  # powtorzen 0 % kosztu (107.0 vs 107.4), tlumaczenie 147-150, kod przy temp 1.0 138; srednio 107.8 -> 122.2.
-  # Opis i pomiary: ~/Desktop/local_agents_project/AGENTIC-MODELS-GUIDE.md
-  "qwen3.6-35b-a3b":
-    description: "Qwen3.6-35B-A3B, 1 GPU (Vulkan), ~110 tok/s, 2 slots x 131k shared ctx"
-    cmd: |
-      /home/mkoniu/llama.cpp-0ce8cd1-vulkan/build/bin/llama-server --port ${PORT} --jinja --agent -fa on
-      -m /home/mkoniu/models/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf
-      -ngl 999 --ctx-size 262144 --kv-unified --parallel 2
-      --batch-size 2048 --ubatch-size 2048
-      --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0 --presence-penalty 0
-      --spec-type ngram-mod
-    env:
-      - "GGML_VK_VISIBLE_DEVICES=1"
-    ttl: 600
-    aliases:
-      - "qwen3.6"
-      - "qwen36"
-
-  # POOL: 4 kopie Qwen3.6-35B-A3B, po jednej na karte, x 3 sloty = 12 agentow naraz, jeden adres.
-  # llama-pool.py startuje kopie na 127.0.0.1:18100-18103 i kieruje rozmowe z powrotem do kopii, ktora
-  # ma ja w cache (inaczej kazda tura czyta cala historie od nowa). 196608 ctx na karte, wspolne dla
-  # 3 slotow (--kv-unified: jeden agent moze zajac caly kontekst, gdy inne sa krotkie).
-  # Zmierzone (bench_conc, 300 tok): 1 agent 109, 4 agentow po 110 (lacznie 418), 8 po 84 (590),
-  # 12 po 71 (677 tok/s lacznie). Wszystkie 4 karty ~94 % zajete, na limicie 250 W.
-  "qwen3.6-35b-a3b-x4":
-    description: "Qwen3.6-35B-A3B x4 GPUs (pool), 12 agents, ~110 tok/s each up to 4, 677 tok/s total at 12"
-    cmd: |
-      python3 /home/mkoniu/.config/llama-swap/llama-pool.py --port ${PORT} --gpus 0,1,2,3 --slots 3
-      --server /home/mkoniu/llama.cpp-0ce8cd1-vulkan/build/bin/llama-server --
-      --jinja --agent -fa on
-      -m /home/mkoniu/models/qwen3.6-35b-a3b/Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf
-      -ngl 999 --ctx-size 196608 --kv-unified
-      --batch-size 2048 --ubatch-size 2048
-      --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0 --presence-penalty 0
-      --spec-type ngram-mod
-    ttl: 600
-    aliases:
-      - "qwen3.6-pool"
-      - "qwen36-x4"
-
-
-
-  # ---------------------------------------------------------------------------------------------
+  # ZAPAS (28 X): glowna wersja to "qwen3.8-flash-next" na silniku radiance (nizej), ~3x szybsza.
+  # Tutaj 28 X: draft MTP 4 -> 2 (+12 %); realnie (temp 1.0) 41-50 tok/s -- stare ~70 bylo srednia z temp 0.
   # Qwen3.8-Flash-Next (27 X 2026). NAJMADRZEJSZY model na tej maszynie (Qwen: SWE-bench Pro 62.5
   # vs 56.0 DeepSeek-V4-Flash-0731). 125B MoE / 6B aktywnych + 51B tablica n-gramow + glowica MTP.
   # Architektura qwen4exp (podglad Qwen4): Gated DeltaNet + rzadka uwaga QSA + hyper-connections.
@@ -200,23 +88,20 @@ models:
   # Pelny opis: ~/Desktop/local_agents_project/AGENTIC-MODELS-GUIDE.md
   # ctx 262144 + 2 sloty: brak VRAM na karcie 3 -> 131072 wspolne dla 2 slotow.
   # Sampling = Qwen "thinking" (temp 1.0, top_p 0.95, top_k 20).
-  "qwen3.8-flash-next":
-    description: "Qwen3.8-Flash-Next (smartest), 4 GPUs, ROCm layer + MTP, ~70 tok/s (tools ~80-97), 131k ctx"
+  "qwen3.8-flash-next-llamacpp":
+    name: "Fallback: Qwen3.8-Flash-Next on llama.cpp (4 GPU)"
+    description: "Same smartest model on llama.cpp - use only if the radiance version misbehaves. All 4 GPUs, ~45-51 tok/s, 131k ctx. Unloads everything else."
     cmd: |
-      /home/mkoniu/llama.cpp-e86f5fd/build/bin/llama-server --port ${PORT} --jinja --agent -fa on
+      /home/mkoniu/llama.cpp-e86f5fd/build/bin/llama-server --port ${PORT} --jinja --agent -fa on --ui-config-file /home/mkoniu/.config/llama-swap/ui-defaults.json
       -m /home/mkoniu/models/qwen3.8-flash-next/UD-Q5_K_XL/Qwen3.8-Flash-Next-UD-Q5_K_XL-00001-of-00006.gguf
       -md /home/mkoniu/models/qwen3.8-flash-next/mtp-Qwen3.8-Flash-Next-Q8_0.gguf
-      --spec-type draft-mtp --spec-draft-n-max 4
+      --spec-type draft-mtp --spec-draft-n-max 2
       -ngl 999 --split-mode layer --tensor-split 0.95,1,1,1.05 --ctx-size 131072 --kv-unified --parallel 2
       --load-mode dio
       --temp 1.0 --top-p 0.95 --top-k 20 --min-p 0 --presence-penalty 0
     env:
       - "HIP_VISIBLE_DEVICES=0,1,2,3"
     ttl: 600
-    aliases:
-      - "qwen3.8"
-      - "qwen38"
-      - "smartest"
 
   # ---------------------------------------------------------------------------------------------
   # Gemma 4 26B-A4B (27 X 2026). MoE ~4B aktywnych, Google, Apache 2.0. Artificial Analysis index 17
@@ -227,12 +112,13 @@ models:
   # Karta 2 -> moze dzialac rownoczesnie z qwen3.6-35b-a3b (karta 1), patrz grupa "agents" na dole.
   # Sampling = zalecenie Google (temp 1.0, top_p 0.95, top_k 64).
   "gemma-4-26b-a4b":
-    description: "Gemma 4 26B-A4B Q8_0, 1 GPU (Vulkan) + MTP + ngram, ~170 tok/s, 2 slots x 131k shared ctx"
+    name: "#3 Gemma 4 26B-A4B - 1 GPU (llama.cpp Vulkan)"
+    description: "Google MoE, good general/agent model on ONE card (GPU 2). ~135-145 tok/s chat, ~170 code/tool turns (MTP + n-gram draft); 2 agents ~93-116 each. 2 slots x 131k ctx. Starts in ~20 s. Unloads everything else."
     cmd: |
-      /home/mkoniu/llama.cpp-0ce8cd1-vulkan/build/bin/llama-server --port ${PORT} --jinja --agent -fa on
+      /home/mkoniu/llama.cpp-0ce8cd1-vulkan/build/bin/llama-server --port ${PORT} --jinja --agent -fa on --ui-config-file /home/mkoniu/.config/llama-swap/ui-defaults.json
       -m /home/mkoniu/models/gemma-4-26b-a4b/gemma-4-26B-A4B-it-Q8_0.gguf
       -md /home/mkoniu/models/gemma-4-26b-a4b/MTP/mtp-gemma-4-26B-A4B-it-Q8_0.gguf
-      --spec-type draft-mtp,ngram-mod
+      --spec-type draft-mtp,ngram-mod --spec-draft-n-max 4
       -ngl 999 --ctx-size 131072 --kv-unified --parallel 2 --batch-size 2048 --ubatch-size 2048
       --temp 1.0 --top-p 0.95 --top-k 64 --min-p 0
     env:
@@ -245,10 +131,87 @@ models:
 # Grupy (27 X 2026). Domyslnie llama-swap trzyma jeden model naraz. Dwa modele agentowe z jednej karty
 # (qwen3.6 na karcie 1, gemma4 na karcie 2) moga byc zaladowane RAZEM (swap: false). exclusive: true =
 # zaladowanie modelu spoza grupy (np. qwen3.8, deepseek, pula x4 -- potrzebuja wszystkich kart) zwalnia grupe.
+
+  # ================================================================ MODELE W DOCKERZE (28 X 2026)
+  # llama-swap uruchamia je jak kazdy inny model: run-compose.sh startuje kontener, pokazuje jego log
+  # i usuwa kontener, gdy llama-swap zwalnia model. Kontenery slucha tylko na 127.0.0.1 (LAN -> :8080).
+  # Opis, pomiary i inne uklady: AGENTIC-MODELS-GUIDE.md.
+
+  # Qwen3.8-Flash-Next na silniku RADIANCE: NAJMADRZEJSZY model, karty 0+1.
+  # radiance = serwer C++/HIP pod RDNA4 (StillDeadcode). Plik .rad 114 GiB: eksperci 4-bit (codebook,
+  # GPTQ), reszta int8, glowica MTP. Jakosc: KL vs bf16 0.024 na tekscie -- mniej niz roznica miedzy
+  # dwiema implementacjami bf16 (0.040). Bezstratnie: --tp-wire exact i KV bf16 (szybsze niz autorskie
+  # wht6/fp8). Zmierzone, temp 1.0: 1 agent 119-151 tok/s czat, 128-160 kod (14k ctx); 4 agentow po ~88.
+  # RAM ~30 GiB (pula 8 GiB na karte + cache tablicy n-gramow czytanej z dysku). Tylko JEDEN model
+  # radiance naraz. NIE uzywac TP=4: kazda karta przypina swoja pule -> 53 GiB RAM, system swapowal.
+  "qwen3.8-flash-next":
+    name: "#1 Qwen3.8-Flash-Next - smartest (radiance, 2 GPU)"
+    description: "Smartest model here. Hard reasoning, coding, long agent tasks. radiance engine, GPU 0+1, 4-bit experts (near-lossless). ~120-145 tok/s chat, ~135 code (14k ctx); 4 agents ~89 each, 8 agents ~69 each. 200k ctx. Starts in ~30 s. Runs together with qwen3.6-35b-a3b (group duo). Uses ~30 GB RAM."
+    cmd: |
+      /home/mkoniu/.config/llama-swap/vllm/run-compose.sh /home/mkoniu/.config/llama-swap/radiance/flashnext.compose.yml
+      PORT=${PORT} NAME=radiance-flashnext GPUS=0,1 TP=2 WIRE=exact KVDT=bf16 NGRAM=disk HOSTPOOL=8192 SEQS=8
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /health
+    ttl: 600
+    aliases:
+      - "qwen3.8"
+      - "qwen38"
+      - "smartest"
+
+  # To samo bez odmow (abliteracja: orcarouter/Qwen3.8-Flash-Next-Uncensored), ten sam przepis .rad.
+  "qwen3.8-flash-next-uncensored":
+    name: "#1 Qwen3.8-Flash-Next Uncensored (radiance, 2 GPU)"
+    description: "Same model with refusals removed (abliterated) - e.g. security research and pentest learning. radiance engine, GPU 0+1, ~120-150 tok/s, 200k ctx. ~30 GB RAM; do not run together with qwen3.8-flash-next."
+    cmd: |
+      /home/mkoniu/.config/llama-swap/vllm/run-compose.sh /home/mkoniu/.config/llama-swap/radiance/flashnext.compose.yml
+      PORT=${PORT} NAME=radiance-flashnext-unc GPUS=0,1 TP=2 WIRE=exact KVDT=bf16 NGRAM=disk HOSTPOOL=8192 SEQS=8
+      MODELDIR=/home/mkoniu/models/qwen3.8-flash-next-uncensored/radiance RADFILE=qwen3.8-next-flash-uncensored-fp8-iq4r-moe.rad
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /health
+    ttl: 600
+    aliases:
+      - "uncensored"
+
+  # Qwen3.6-35B-A3B FP8 na vLLM "Radiance" (fork vLLM pod R9700), karty 2+3. Wagi FP8 (lepsze niz Q5
+  # GGUF), KV bf16 (bezstratne; fp8 tutaj bez kalibracji), MTP. Temp 0.6 (Qwen: precise coding).
+  # Zmierzone: 1 agent 135-146 tok/s, 8 agentow po ~86 (~690 lacznie). llama.cpp na 1 karcie: 100-111.
+  "qwen3.6-35b-a3b":
+    name: "#2 Qwen3.6-35B-A3B - fast agent (vLLM, 2 GPU)"
+    description: "Fast, capable agent/coding model. vLLM, FP8 weights, GPU 2+3. ~140-170 tok/s 1 agent, 8 agents ~90 each (~720 total). 131k ctx. Cold start ~2-3 min. Runs together with qwen3.8-flash-next (group duo)."
+    cmd: |
+      /home/mkoniu/.config/llama-swap/vllm/run-compose.sh /home/mkoniu/.config/llama-swap/vllm/qwen3.6-fp8.compose.yml
+      PORT=${PORT} NAME=qwen36-vllm GPUS=2,3 TP=2 SEQS=8 KVDT=auto MAXLEN=131072
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /health
+    useModelName: qwen3.6-35b-a3b
+    ttl: 600
+    aliases:
+      - "qwen3.6"
+      - "qwen36"
+
+  # Ten sam model na 4 kartach (TP=4), do 16 agentow. Zmierzone: 1 agent 148-160, 8 po 85-100,
+  # 12 po 74-83 (~920 tok/s lacznie). Zastapil pule 4 x llama.cpp (12 po 71, 677 lacznie).
+  "qwen3.6-35b-a3b-x4":
+    name: "#2 Qwen3.6-35B-A3B x4 - many agents (vLLM, 4 GPU)"
+    description: "For 8-16 parallel agents. vLLM tensor-parallel on all 4 GPUs. ~140-245 tok/s 1 agent, 8 agents ~103 each (~830 total), 12 agents ~80-85 each (~950-1020 total). 131k ctx. Cold start ~2-3 min. Unloads everything else."
+    cmd: |
+      /home/mkoniu/.config/llama-swap/vllm/run-compose.sh /home/mkoniu/.config/llama-swap/vllm/qwen3.6-fp8.compose.yml
+      PORT=${PORT} NAME=qwen36-vllm-x4 GPUS=0,1,2,3 TP=4 SEQS=16 KVDT=auto MAXLEN=131072
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /health
+    useModelName: qwen3.6-35b-a3b
+    concurrencyLimit: 20   # llama-swap domyslnie 10 -> przy 12 agentach 2 dostawaly HTTP 429
+    ttl: 600
+    aliases:
+      - "qwen3.6-pool"
+      - "qwen36-x4"
+
 groups:
-  agents:
+  # Najmadrzejszy (karty 0+1) i szybki agent (karty 2+3) dzialaja jednoczesnie.
+  # Pozostale modele (Gemma, Bielik, zapasowy llama.cpp) przy zaladowaniu zwalniaja wszystko inne.
+  duo:
     swap: false
     exclusive: true
     members:
+      - "qwen3.8-flash-next"
       - "qwen3.6-35b-a3b"
-      - "gemma-4-26b-a4b"

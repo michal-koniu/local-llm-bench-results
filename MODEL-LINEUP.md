@@ -1,76 +1,126 @@
 # Model lineup and serving guide — 4× Radeon AI PRO R9700
 
-**State as of 2026-10-27.** Which model to use for what, how fast each one really is on this rig, why it is
-configured the way it is, and how to point OpenClaw or any other harness at it.
+Rig: `mkoniu-B850-AI-TOP` (192.168.0.39), 4× R9700 (32 GB, gfx1201, PCIe), Ryzen 7 9700X, 60 GB RAM.
+One endpoint serves everything: **llama-swap on `http://192.168.0.39:8080/v1`**. It starts a model on the
+first request and stops it after 10 idle minutes — whether the model runs on llama.cpp, vLLM or radiance.
 
-Everything is served by **llama-swap on port 8080** (OpenAI-compatible): `http://192.168.0.39:8080/v1`.
-Pick a model by its name in the `model` field; llama-swap loads it on demand and unloads whatever was in the way.
+Last full measurement: 2026-10-28. Every speed below is **decode tokens/s measured from the client** with the
+**vendor's recommended sampling** (`local-llm-perf-bench/server-bench/bench_stream.py`; raw data in
+`serving/measurements-20261028/`). "chat" = a ~700-token answer to a short question, "code" = a rewrite after a
+~14k-token source file. The first request after a start is 5–25 % slower (warm-up); ranges show both.
 
 ---
 
-## 1. The lineup at a glance
+## 1. The lineup (what is in llama-swap)
 
-| Rank (intelligence) | Model (`model` name) | Intelligence evidence | Speed, 1 agent (measured) | Several agents | GPUs | Use it for |
-|---:|---|---|---|---|---|---|
-| 1 | **`qwen3.8-flash-next`** | Qwen-reported SWE-bench Pro **62.5**, DeepSWE 58.7 — above DeepSeek-V4-Flash-0731 (56.0) in the same table | **~70 tok/s** (tool calls 78–97, prose ~45) | 2 slots, but 2 at once = ~38 tok/s each (~69 total): no gain over one | 4 | The hardest single-chat tasks: architecture, long reasoning, difficult code |
-| 2 | **`deepseek-v4-flash-0731`** | **Our hard suite: 92 PL / 93 EN** (agents 97/97). Terminal-Bench 2.1 82.7 (DeepSeek) | ~50 tok/s | 2 slots, ~63 tok/s total | 4 | Second opinion; **longest context** (196k served, 512k in `-nospec`) |
-| 3 | **`qwen3.6-35b-a3b`** / **`qwen3.6-35b-a3b-x4`** | Artificial Analysis index **18** (gpt-oss-120b: 12); SWE-bench Verified 73.4, Terminal-Bench 51.5 (Qwen) | **122–130 tok/s** | pool: 4 agents × ~200, **12 agents × ~107 tok/s** | 1 / 4 | **Agentic work, many agents in parallel** (OpenClaw, coding harnesses) |
-| 4 | **`gemma-4-26b-a4b`** | Artificial Analysis index **17**; different model family from Qwen | **~170 tok/s** (tool calls 182–191) | 2 slots: ~366 tok/s total on short prompts | 1 | Fastest agent; second-family opinion; runs **together with** `qwen3.6-35b-a3b` |
-| — | `bielik-11b` | Polish specialist (11B dense) | ~45 tok/s | — | 1 | Polish-language text only; weak at tool use |
-| — | `deepseek-v4-flash-0731-nospec` | same as #2 | ~24 tok/s, but prompt reading ~2× faster | 4 slots × 131k | 4 | Huge prompts with short answers |
+Ranked by intelligence (vendor and public benchmarks; the 1st and 2nd places are clear, the rest are close).
 
-**How to read "intelligence".** Only DeepSeek has been measured with our own hard suite
-([local-llm-quality-bench](https://github.com/michal-koniu/local-llm-quality-bench)). The other three ranks come
-from vendor tables and Artificial Analysis — consistent with each other, but not yet confirmed on our tasks.
-Run the hard suite on `qwen3.8-flash-next`, `qwen3.6-35b-a3b` and `gemma-4-26b-a4b` when you have a free evening
-to turn ranks 1, 3 and 4 into measured numbers.
+| # | llama-swap name | Engine, cards | 1 agent tok/s | Many agents (tok/s each) | Context | Cold start | RAM |
+|---|---|---|---:|---|---:|---:|---:|
+| 1 | `qwen3.8-flash-next` | radiance, GPU 0+1 | **118–144** chat, **133–139** code | 4 × 89, 8 × 69 | 200k | 30 s | ~30 GB |
+| 1 | `qwen3.8-flash-next-uncensored` | radiance, GPU 0+1 | 122–145 chat, 117–140 code | (same as above) | 200k | 30 s | ~30 GB |
+| 2 | `qwen3.6-35b-a3b` | vLLM, GPU 2+3 | **138–147** chat, **159–172** code | 8 × 90 (~720 total) | 131k | 2–3 min | ~6 GB |
+| 2 | `qwen3.6-35b-a3b-x4` | vLLM, all 4 GPUs | 141–164 chat, 197–246 code | 8 × 103 (~830), **12 × 80–85 (~1,000)** | 131k | 2–3 min | ~8 GB |
+| 3 | `gemma-4-26b-a4b` | llama.cpp Vulkan, GPU 2 | 135–145 chat, 169–175 code | 2 × 93–116 | 2 × 131k | 20 s | small |
+| 4 | `bielik-11b` (Polish) | llama.cpp Vulkan, GPU 0 | 48 chat, 37 code | – | 32k | 10 s | small |
+| – | `qwen3.8-flash-next-llamacpp` | llama.cpp ROCm, 4 GPUs | 50–51 chat, 44–46 code | 2 × 29–38 | 131k | 1–2 min | ~50 GB* |
 
-**Speeds** are llama-server's own counters (`timings.predicted_per_second`) through llama-swap with the exact
-serving flags, from `server-bench/bench_spec.py` (one agent, four kinds of task, temperature 0 and 1) and
-`bench_conc.py` (several agents). Raw files: [`serving/measurements-20261027/`](serving/measurements-20261027/).
+\* the llama.cpp version keeps Qwen3.8's 51 GB n-gram table in RAM (read lazily); it is a fallback only.
+
+**Group `duo`:** `qwen3.8-flash-next` (GPU 0+1) and `qwen3.6-35b-a3b` (GPU 2+3) stay loaded **together** — the
+smartest model for planning/review plus a fast worker, ~36 GB RAM in total. Any other model unloads everything.
+Only one radiance model at a time (two would need ~60 GB RAM).
 
 ### Quick choice
 
-- **"I want the best possible answer and I'll wait."** → `qwen3.8-flash-next` (or `smartest`).
-- **"One coding agent / OpenClaw, fast."** → `gemma-4-26b-a4b` (~170 tok/s) or `qwen3.6-35b-a3b` (~125 tok/s, slightly smarter).
-- **"8–12 agents at once."** → `qwen3.6-35b-a3b-x4`.
-- **"Two different agents (e.g. coder + reviewer) at the same time."** → `qwen3.6-35b-a3b` + `gemma-4-26b-a4b`;
-  both stay loaded together (group `agents`, cards 1 and 2).
-- **"A 300k-token document."** → `deepseek-v4-flash-0731` (or `-nospec` if the answer is short).
+| You need | Use |
+|---|---|
+| The best answer to a hard question; long agent tasks; code review | `qwen3.8-flash-next` |
+| Same, but without refusals (security research, pentest learning) | `qwen3.8-flash-next-uncensored` |
+| A fast agent / coding worker (1–8 agents) | `qwen3.6-35b-a3b` |
+| 8–16 agents at once | `qwen3.6-35b-a3b-x4` |
+| A smart planner and fast workers at the same time | `qwen3.8-flash-next` + `qwen3.6-35b-a3b` (group `duo`) |
+| Something that starts in seconds on one card | `gemma-4-26b-a4b` |
+| Polish text | `bielik-11b` |
 
-Only one of these can be loaded at a time: the 4-GPU models (`qwen3.8-flash-next`, both DeepSeeks,
-`qwen3.6-35b-a3b-x4`) or the `agents` pair. Switching costs 10–100 s of loading.
+Removed on 2026-10-28: DeepSeek-V4-Flash-0731 (41–52 tok/s at best — too slow, and Qwen3.8-Flash-Next is smarter).
 
 ---
 
-## 2. Using the models from a harness
+## 2. Other configurations we measured (for specific scenarios)
 
-Every model speaks the OpenAI Chat Completions API, with tool calling (`tools`, `tool_calls`).
+Not everything belongs in llama-swap, but every setup below was run and measured on this rig. Use it when an
+application needs a different split of the four cards. "How" says what to change; files are in section 6.
+
+### 2.1 One model on ONE card
+
+| Model, engine | 1 agent tok/s | Notes / how |
+|---|---:|---|
+| Gemma 4 26B-A4B Q8_0, llama.cpp **Vulkan** + MTP + n-gram | 135–145 chat, 169–175 code | in llama-swap (`gemma-4-26b-a4b`); pick the card with `GGML_VK_VISIBLE_DEVICES` |
+| Qwen3.6-35B-A3B UD-Q5_K_XL, llama.cpp Vulkan + n-gram | 100–111 | the pre-vLLM entry; file still in `~/models/qwen3.6-35b-a3b/`; ROCm was 87, Q4 only +3 % |
+| Qwen3.8-27B MXFP4, vLLM Radiance TP1 | 78 chat, 93–96 code | `serve-tp1.sh`; only **64k** context fits (131k fails: 3.9 GB left for KV) |
+| Bielik 11B Q8_0, llama.cpp Vulkan | 48 | Vulkan +5 % over ROCm; speculative decoding gives nothing |
+| Qwen3.6 FP8 on vLLM | — | does not fit one card (35 GB weights) |
+
+### 2.2 One model on TWO cards
+
+| Model, engine | 1 agent tok/s | Many agents | Notes |
+|---|---:|---|---|
+| **Qwen3.8-Flash-Next, radiance** (lossless: `--tp-wire exact`, KV bf16) | 118–144 chat, 133–139 code | 4 × 89, 8 × 69 | in llama-swap |
+| Qwen3.8-Flash-Next, radiance, author's settings (`--tp-wire wht6`, KV fp8) | 78–103 chat, 108–134 code | 4 × 85–89 | lossy *and* not faster here → not used |
+| **Qwen3.6-35B-A3B FP8, vLLM Radiance** (KV bf16) | 138–147 chat, 159–172 code | 8 × 90 | in llama-swap; KV fp8 was the same speed but uncalibrated |
+| Qwen3.8-27B MXFP4 + DFlash2, vLLM Radiance TP2 (KV bf16) | 123–131 chat, 151–167 code | 8 × 70 | as fast as Flash-Next on the same cards but less capable → not in llama-swap |
+
+### 2.3 Three cards
+
+Nothing here needs exactly three cards. Useful combinations instead:
+- `qwen3.8-flash-next` (GPU 0+1) + `gemma-4-26b-a4b` (GPU 2): add both to a group like `duo` (section 5).
+- radiance supports `--tp 3` (`~/radiance-engine/docs/TP3.md`, attention runs on 2 of the 3 ranks) — untested;
+  llama.cpp Qwen3.8 on 3 vs 4 cards made no difference.
+
+### 2.4 One model on ALL FOUR cards
+
+| Model, engine | 1 agent | Many agents | Notes |
+|---|---:|---|---|
+| **Qwen3.6-35B-A3B FP8, vLLM TP4** | 141–164 chat, 197–246 code | 8 × 103, 12 × 80–85 | in llama-swap (`-x4`); needs `concurrencyLimit` > 10 (section 4.7) |
+| Qwen3.6 vLLM, 2 copies × 2 cards (`--data-parallel-size 2`) | – | – | crashed under load in one test; not pursued |
+| Qwen3.6 llama.cpp, 4 copies × 1 card (`llama-pool.py`) | 109 (130 with n-gram) | 12 × 71 (677 total) | replaced by vLLM TP4; script kept in `serving/llama-pool.py` |
+| Qwen3.8-Flash-Next, radiance TP4 | – | – | **pins 4 × host pool → 53 GB RAM, system swapped**; don't |
+| Qwen3.8-Flash-Next, llama.cpp ROCm (layer or tensor split) | 45–51 | 2 × 29–38 | kernel-launch bound, see 4.6; fallback entry |
+| DeepSeek-V4-Flash-0731, llama.cpp tensor split + DSpark | 41–43 chat, 39–52 code | 2 × ~23 | removed |
+
+---
+
+## 3. Using the models
 
 | Setting | Value |
 |---|---|
-| Base URL | `http://192.168.0.39:8080/v1` (from the rig itself: `http://localhost:8080/v1`) |
-| API key | anything non-empty (llama-swap has no authentication) |
-| Model | a name from the table above (aliases work too: `smartest`, `qwen3.6-pool`, `gemma4`, …) |
-| Context window to declare | see below |
+| Base URL | `http://192.168.0.39:8080/v1` (on the rig: `http://localhost:8080/v1`) |
+| API key | anything non-empty |
+| Model | a llama-swap name from section 1 (aliases: `smartest`, `uncensored`, `qwen3.6`, `qwen3.6-pool`, `gemma4`, …) |
 
-**Context to declare in the client.** Each llama-server shares its KV cache between its slots (`--kv-unified`):
-one agent can use all of it when the others are short, but if every slot fills up at once there is no room left.
-Declare a window that still fits when all slots are full:
+**Context to declare in the client.** All engines share one KV pool between parallel requests. Declare a
+window that still fits when several agents are long at once:
 
-| Model | Served context (shared) | Slots | Safe per-agent window to declare |
-|---|---:|---:|---:|
-| `qwen3.8-flash-next` | 131,072 | 2 | 65,536 (131,072 if you use one chat at a time) |
-| `qwen3.6-35b-a3b` | 262,144 | 2 | 131,072 |
-| `qwen3.6-35b-a3b-x4` | 196,608 per GPU | 3 per GPU (12) | 65,536 |
-| `gemma-4-26b-a4b` | 131,072 | 2 | 65,536 |
-| `deepseek-v4-flash-0731` | 196,608 | 2 | 98,304 |
+| Model | Max per request | Safe per-agent window with many agents |
+|---|---:|---:|
+| `qwen3.8-flash-next(-uncensored)` | 200,000 | 65,536 (4+ agents) |
+| `qwen3.6-35b-a3b` / `-x4` | 131,072 | 65,536 (8+ agents) |
+| `gemma-4-26b-a4b` | 131,072 | 65,536 |
+
+### User interfaces
+- **llama-swap UI** — `http://192.168.0.39:8080/ui`: model list with the descriptions from section 1, load/unload,
+  logs, a Playground chat that works with every model. For llama.cpp models, the model's own chat UI is at
+  `http://192.168.0.39:8080/upstream/<name>/`.
+  *"Agentic turn limit reached"* comes from that llama.cpp chat UI (Settings → Tools → **Agentic turns**, per
+  browser, default 100). The server default is now 10,000 (`~/.config/llama-swap/ui-defaults.json`), but a browser
+  that already saved settings keeps its value — change it there once.
+- **Open WebUI** — `http://192.168.0.39:3000`: full chat app (history, files, system prompts) for **all** models,
+  connected to llama-swap. The first account you create becomes the admin. Container `open-webui`
+  (`docker restart open-webui`; data in the Docker volume `open-webui`).
 
 ### OpenClaw
-
-OpenClaw talks to any OpenAI-compatible server through a custom provider. Add to `~/.openclaw/openclaw.json`
-(field names as of the OpenClaw versions current in autumn 2026 — check `openclaw doctor` if your version differs):
-
+`~/.openclaw/openclaw.json` (field names as of autumn 2026 — `openclaw doctor` shows differences):
 ```json
 {
   "models": {
@@ -81,245 +131,179 @@ OpenClaw talks to any OpenAI-compatible server through a custom provider. Add to
         "apiKey": "local",
         "api": "openai-completions",
         "models": [
-          { "id": "qwen3.6-35b-a3b-x4", "name": "Qwen3.6 35B pool (12 agents)", "reasoning": true, "contextWindow": 65536,  "maxTokens": 16384 },
-          { "id": "gemma-4-26b-a4b",    "name": "Gemma 4 26B (fastest)",        "reasoning": true, "contextWindow": 65536,  "maxTokens": 16384 },
-          { "id": "qwen3.6-35b-a3b",    "name": "Qwen3.6 35B (1 GPU)",          "reasoning": true, "contextWindow": 131072, "maxTokens": 16384 },
-          { "id": "qwen3.8-flash-next", "name": "Qwen3.8 Flash-Next (smartest)", "reasoning": true, "contextWindow": 131072, "maxTokens": 32768 }
+          { "id": "qwen3.8-flash-next", "name": "Qwen3.8 Flash-Next (smartest)", "reasoning": true, "contextWindow": 131072, "maxTokens": 32768 },
+          { "id": "qwen3.6-35b-a3b",    "name": "Qwen3.6 35B (fast worker)",     "reasoning": true, "contextWindow": 65536,  "maxTokens": 16384 },
+          { "id": "qwen3.6-35b-a3b-x4", "name": "Qwen3.6 35B x4 (many agents)",  "reasoning": true, "contextWindow": 65536,  "maxTokens": 16384 },
+          { "id": "gemma-4-26b-a4b",    "name": "Gemma 4 26B (1 GPU)",           "reasoning": true, "contextWindow": 65536,  "maxTokens": 16384 }
         ]
       }
     }
   },
-  "agents": { "defaults": { "model": { "primary": "rig/qwen3.6-35b-a3b-x4", "fallbacks": ["rig/gemma-4-26b-a4b"] } } }
+  "agents": { "defaults": { "model": { "primary": "rig/qwen3.8-flash-next", "fallbacks": ["rig/qwen3.6-35b-a3b"] } } }
 }
 ```
+Main agent on `qwen3.8-flash-next`, sub-agents on `qwen3.6-35b-a3b`: both stay loaded (group `duo`).
+For a swarm of 8–16 sub-agents use `qwen3.6-35b-a3b-x4` instead (it unloads the others while it runs).
 
-Use the **pool** as the default when OpenClaw runs sub-agents in parallel; switch an agent to
-`rig/qwen3.8-flash-next` for a single hard task (it unloads the pool for that time).
-
-### opencode
-
-`~/.config/opencode/opencode.json`:
-
+### opencode, Python, curl
 ```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "provider": {
-    "rig": {
-      "name": "Local rig",
-      "npm": "@ai-sdk/openai-compatible",
-      "options": { "baseURL": "http://192.168.0.39:8080/v1" },
-      "models": {
-        "gemma-4-26b-a4b":    { "name": "Gemma 4 26B (fast)" },
-        "qwen3.6-35b-a3b":    { "name": "Qwen3.6 35B" },
-        "qwen3.8-flash-next": { "name": "Qwen3.8 Flash-Next (smartest)" }
-      }
-    }
-  }
-}
+{ "$schema": "https://opencode.ai/config.json",
+  "provider": { "rig": { "name": "Local rig", "npm": "@ai-sdk/openai-compatible",
+    "options": { "baseURL": "http://192.168.0.39:8080/v1" },
+    "models": { "qwen3.8-flash-next": { "name": "Qwen3.8 Flash-Next" }, "qwen3.6-35b-a3b": { "name": "Qwen3.6 35B" } } } } }
 ```
-
-In opencode, pick the model with `/model` (not `/connect`).
-
-### Anything else (Python, curl)
-
 ```python
 from openai import OpenAI
 c = OpenAI(base_url="http://192.168.0.39:8080/v1", api_key="local")
-r = c.chat.completions.create(model="gemma-4-26b-a4b", messages=[{"role": "user", "content": "Hi"}])
+print(c.chat.completions.create(model="qwen3.6-35b-a3b", messages=[{"role": "user", "content": "Hi"}]).choices[0].message.content)
 ```
-
 ```bash
-curl -s http://192.168.0.39:8080/v1/models                 # what is configured
-curl -s http://192.168.0.39:8080/running                   # what is loaded right now, with its full command line
-curl -s -X POST http://192.168.0.39:8080/api/models/unload # free all GPUs
+curl -s http://192.168.0.39:8080/v1/models                  # configured models
+curl -s http://192.168.0.39:8080/running                    # loaded now
+curl -s -X POST http://192.168.0.39:8080/api/models/unload  # free all GPUs
+```
+**Sampling.** Each model has its vendor's sampling as the server default (Qwen3.8: temp 1.0 / top-p 0.95 / top-k 20;
+Qwen3.6: 0.6 / 0.95 / 20 "precise coding"; Gemma 4: 1.0 / 0.95 / 64). A client that sends its own `temperature`
+overrides it.
+
+---
+
+## 4. Lessons from the measurements
+
+### 4.1 Measure with real sampling, not temperature 0
+Speculative decoding (a cheap drafter guesses tokens, the model verifies several in one pass) accepts far more
+guesses at temperature 0. The first lineup (2026-10-27) averaged temp-0 and temp-1.0 runs and reported Qwen3.8
+at "~70" and Gemma at "~170" tok/s; with vendor sampling the same configs gave ~47 and ~140 — what the UI showed.
+`bench_stream.py` therefore always takes the sampling as arguments.
+
+### 4.2 The engine matters more than any flag
+| Model | llama.cpp (best) | Best other engine | Why |
+|---|---:|---:|---|
+| Qwen3.8-Flash-Next | 45–51 (4 GPUs) | **118–144 (radiance, 2 GPUs)** | radiance fuses this architecture's ~3,400 small kernels per token; llama.cpp launches them one by one (4.6) |
+| Qwen3.6-35B-A3B | 100–111 (1 GPU) | **138–172 (vLLM FP8, 2 GPUs)** | vLLM's MTP drafter + RDNA4-tuned MoE kernels; FP8 weights are also *more* precise than Q5 |
+| Gemma 4 26B-A4B | 135–175 (1 GPU) | – | the Radiance vLLM fork has no Gemma 4 26B support yet |
+
+### 4.3 Engines on this rig
+- **llama.cpp / llama-server** (`~/llama.cpp-*`): GGUF files, any number of cards, Vulkan or ROCm builds.
+  On RDNA4 **Vulkan is faster for single-card MoE** (+18–28 % Qwen3.6/Gemma, +5 % dense Bielik); ROCm for multi-card.
+- **vLLM "Radiance" fork** (`stilldeadcode/vllm-radiance:0.9.3`, repo `~/radiance-vllm-mxfp4`): stock vLLM does
+  not run well on gfx1201 (no AITER, broken FP8); this community fork patches it. Safetensors checkpoints
+  (FP8, MXFP4), tensor parallel over 2 or 4 cards, MTP/DFlash drafters, real continuous batching.
+  Cold start 2–3 min (kernel cache in `~/radiance-vllm-mxfp4/vllm-cache`).
+- **radiance** (`stilldeadcode/radiance:1.13.0`, docs `~/radiance-engine/docs/`): a separate C++/HIP server for
+  RDNA4 by the same author. Loads its own `.rad` containers (weights + tokenizer + template + drafter).
+  Only engine that runs Qwen3.8-Flash-Next fast. Speaks OpenAI, Anthropic Messages and llama-server APIs.
+  Status: young project ("early dev") — keep the llama.cpp fallback entry.
+
+### 4.4 Lossless choices that cost nothing
+| Choice | Result |
+|---|---|
+| KV cache **bf16** instead of uncalibrated fp8 (vLLM Qwen3.6 / Qwen3.8-27B) | same speed (139–146 vs 130–140) |
+| radiance `--tp-wire exact` + KV bf16 instead of `wht6` + fp8 | faster here (118–144 vs 78–103 chat) |
+| Qwen3.6 FP8 (vLLM) instead of Q5_K_XL GGUF | faster *and* closer to the original |
+| Gemma Q8_0 instead of Q6_K_XL; Qwen3.6 Q5 instead of Q4 | +3–4 % speed was not worth the precision |
+
+Quality of the 4-bit Flash-Next `.rad` file (author's measurement, ~75k positions of chat/tool/code): mean KL vs bf16
+0.024 on text, top-1 agreement 94.6 % — closer to bf16 than a second bf16 implementation is (0.040 / 95.1 %).
+
+### 4.5 Draft length per model (speculative decoding, vendor sampling)
+| Model | Best | Tested | Gain |
+|---|---|---|---|
+| Qwen3.8 llama.cpp (MTP) | **2** | 2 / 3 / 4 / 3+p-min / 8+p-min / +ngram | 47 vs 42 at 4 (+12 %) |
+| Gemma 4 (MTP + n-gram) | **4** | 2–6, ngram 16/64 | equal on chat, best on code |
+| Qwen3.6 llama.cpp | n-gram only | embedded MTP GGUF (unsloth) | MTP in llama.cpp **34–40 vs 107** — broken path, don't |
+| DeepSeek DSpark | 3 | 2 / 3 / 5 | 3 ≈ 5 > 2 |
+| vLLM Qwen3.6 | Radiance dynamic draft (8→4 by load) | – | built into the image |
+| radiance Flash-Next | MTP depth 3 | – | author default |
+
+### 4.6 Why Qwen3.8-Flash-Next is slow on llama.cpp
+rocprofv3: ~3,400 GPU kernels per token, ~23 ms per token, most of them tiny. Every kernel costs a few µs to launch
+no matter how small, so speed stayed at 33–36 tok/s with layer or tensor split, Vulkan, Q4 instead of Q5, 3 or 4
+cards, RCCL, HIP graphs — the limit was the implementation, not the hardware. radiance fuses those kernels
+(e.g. the all-reduce with the gated-residual write) and runs the same model 3× faster on half the cards.
+
+### 4.7 Limits found the hard way
+- **RAM.** radiance pins `--host-pool-mib` *per card* plus the n-gram table. TP4 with the author's 12 GB pool
+  took 53 GB of 60 → swap, memory alerts. Now: TP2, 8 GB pool, n-gram table read from disk → ~30 GB, same speed.
+- **llama-swap `concurrencyLimit` defaults to 10** per model: request 11+ gets HTTP 429. The `-x4` entry has 20.
+- **One card drives the monitor** (GPU 0, ~0.8 GB used): vLLM on GPU 0 needs `--gpu-memory-utilization` ≤ 0.94.
+- **The power profile** COMPUTE (`/usr/local/sbin/gpu-tuning.sh`, set at boot) gave +9 % on Qwen3.8 llama.cpp.
+
+---
+
+## 5. How llama-swap runs Docker models (and how to add one)
+
+llama-swap only knows "run this command, wait for `/health`, proxy to `${PORT}`, kill it later". Two small
+wrappers make a container behave like such a command:
+
+- `~/.config/llama-swap/vllm/run-compose.sh FILE.compose.yml VAR=value …` — `docker compose up -d`, follows the
+  container log (visible in llama-swap's Logs), and `docker compose down` when llama-swap stops the model.
+  Used by `qwen3.6-*` (vLLM) and `qwen3.8-flash-next*` (radiance).
+- `~/.config/llama-swap/vllm/run-docker.sh NAME launcher …` — for launchers that start one named container
+  themselves (Radiance's `serve-tp2.sh`); stops that container on exit. Used by the 27B recipe below.
+
+The compose files take everything that differs between entries as variables (`GPUS`, `TP`, `SEQS`, `KVDT`,
+`HOSTPOOL`, `NGRAM`, `RADFILE`, …), so a new variant is a new llama-swap entry with other values, e.g. Flash-Next on
+cards 2+3: `GPUS=2,3`. Containers listen on 127.0.0.1 only; the LAN goes through llama-swap.
+
+**Run a container by hand** (debugging):
+```bash
+cd ~/.config/llama-swap/radiance
+PORT=8000 NAME=fn-test GPUS=0,1 TP=2 WIRE=exact KVDT=bf16 docker compose -f flashnext.compose.yml up -d
+docker logs -f fn-test        # Ctrl-C leaves it running
+NAME=fn-test docker compose -f flashnext.compose.yml down
 ```
 
-**Sampling.** Each model has its vendor's recommended sampling set as the server default (Qwen3.6: "thinking,
-precise coding" temp 0.6 / top-p 0.95 / top-k 20; Qwen3.8: temp 1.0 / 0.95 / 20; Gemma 4: temp 1.0 / 0.95 / 64).
-A client that sends its own `temperature` overrides it — many harnesses do; that is fine.
+**Recipe: Qwen3.8-27B on vLLM (2 cards)** — measured in 2.2, files already on disk
+(`~/models/Qwen3.8-27B-MXFP4-mtpfp8`, `~/models/Qwen3.8-27B-DFlash2-FP8`):
+```yaml
+  "qwen3.8-27b":
+    name: "Qwen3.8-27B MXFP4 - vLLM, 2 GPU"
+    cmd: |
+      /home/mkoniu/.config/llama-swap/vllm/run-docker.sh vllm-qwen38-27b
+      env NAME=vllm-qwen38-27b SERVED_NAMES=qwen3.8-27b PORT=${PORT} GPU_IDS=0,1 GPU_UTIL=0.94 MAXLEN=131072
+      /home/mkoniu/radiance-vllm-mxfp4/serve-tp2.sh --kv-cache-dtype auto --host 127.0.0.1
+      --override-generation-config '{"temperature":1.0,"top_p":0.95,"top_k":20}'
+    proxy: http://127.0.0.1:${PORT}
+    checkEndpoint: /health
+    useModelName: qwen3.8-27b
+```
+
+**Make two models share the cards** (like `duo`): put them in one group with `swap: false`; their GPUs must not
+overlap and their RAM must fit together.
+
+**Add a radiance model**: download the `.rad` (links in `~/radiance-engine/README.md`, compose examples in
+`~/radiance-engine/deploy/compose/`), copy the Flash-Next entry, set `MODELDIR`/`RADFILE`, start with TP2.
 
 ---
 
-## 3. Why it is set up this way (what we measured)
-
-### 3.1 What decides decode speed
-
-Generating one token means reading every **active** weight from VRAM once. An R9700 reads ~640 GB/s, so a
-model whose active weights take 3 GB can, at best, produce ~200 tokens/s. That is why the fast models here are
-**Mixture-of-Experts** with few active parameters (Qwen3.6: 3B of 35B; Gemma 4: ~4B of 26B): they are large
-(smart) but read little per token.
-
-This "bandwidth ceiling" is only a ceiling. Two other things can cap speed far below it — both appear below.
-
-### 3.2 Vulkan vs ROCm: same code, different GPU kernels
-
-llama.cpp can drive the R9700 through **ROCm (HIP)** or **Vulkan**. Same commit, same file, one card:
-
-| Model | ROCm decode | Vulkan decode | Prompt (4k) ROCm / Vulkan |
-|---|---:|---:|---:|
-| Qwen3.6-35B-A3B UD-Q5_K_XL | 86.7 | **111.3** (+28 %) | 3,589 / 3,269 (4,158 with `-ub 2048`) |
-| Gemma 4 26B-A4B Q8_0 | 84.7 | **99.6** (+18 %) | 5,286 / 4,648 |
-| Qwen3.8-Flash-Next (4 GPUs) | **33.2** | 27.4 | — |
-
-Rule of thumb on RDNA4: **Vulkan for small-active MoE models on one card; ROCm for models spread over several
-cards** (only ROCm has tensor split, and Vulkan's multi-GPU path was slower here). The Vulkan build lives in
-`~/llama.cpp-0ce8cd1-vulkan`; the Vulkan SDK it was compiled with is in `~/vulkan-sdk` (no system packages needed).
-In Vulkan, pick the card with `GGML_VK_VISIBLE_DEVICES=N` — `HIP_VISIBLE_DEVICES` does nothing there.
-
-### 3.3 Quantization: when fewer bits do not buy speed
-
-| Model | Bigger quant | Smaller quant | Speed gain | Decision |
-|---|---|---|---:|---|
-| Qwen3.6-35B-A3B | UD-Q5_K_XL 111.3 | UD-Q4_K_XL 114.7 | +3 % | keep **Q5** |
-| Gemma 4 26B-A4B | Q8_0 99.6 | UD-Q6_K_XL 103.4 | +4 % | keep **Q8_0** |
-| Qwen3.8-Flash-Next | UD-Q5_K_XL 36.1 | UD-Q4_K_XL 36.1 | 0 % | keep **Q5** |
-
-When the gain is a few percent, the higher-precision file wins: "without losing intelligence" costs almost nothing.
-
-### 3.4 Using four cards: split one model, or run four copies
-
-- **Layer split** (`-sm layer`): each card holds a slice of the layers and they work *one after another*.
-  It lets a model bigger than one card run, but it does **not** make one agent faster.
-- **Tensor split** (`-sm tensor`): every card holds a slice of *every* layer and they work together on each token.
-  It made DeepSeek-V4-Flash 2× faster (23.5 → ~50 tok/s), but did nothing for Qwen3.8 (see 3.6).
-- **Copies** (`qwen3.6-35b-a3b-x4`): a model that fits on one card runs as **four independent copies**, one per card.
-  One agent is no faster, but four agents are four times faster in total. That is the pool:
-
-| Agents at once | Per agent (no spec.) | Per agent (with n-gram spec.) | Total (no spec.) | Total (with n-gram) |
-|---:|---:|---:|---:|---:|
-| 1 | 109 | **130** | 105 | 124 |
-| 4 | 110 | **203** | 418 | 481 |
-| 8 | 84 | — | 590 | — |
-| 12 | 71 | **107** | 677 | 596 |
-
-At 12 agents all four cards run ~94 % busy at their 250 W power limit — the hardware is fully used.
-Raising `POWER_W` in `/usr/local/sbin/gpu-tuning.sh` (max 300 W) would buy more at high load, at the cost of heat.
-
-**How the pool routes requests** (`~/.config/llama-swap/llama-pool.py`): llama-server keeps a conversation's
-history in the slot that served it, so the next turn only has to read the *new* tokens — if it lands on the same
-copy. Otherwise the copy reads the whole history again (10–30 s for a long agent session). The pool therefore
-recognises a conversation by its first two messages (system prompt + first user message, which never change),
-sends follow-up turns back to the copy that has it cached, and sends everything else to the least busy copy.
-`curl localhost:8080/upstream/qwen3.6-35b-a3b-x4/pool` (while it is loaded) shows requests in flight per GPU.
-
-### 3.5 Speculative decoding: guess cheaply, verify in one pass
-
-The big model can check several proposed tokens in **one** forward pass for almost the price of one token.
-If a cheap "drafter" guesses the next few tokens right, you get several tokens per pass. Output is identical to
-normal decoding (every token is verified), so there is **no quality loss** — only speed.
-
-| Drafter | What guesses | Used for | Measured |
-|---|---|---|---|
-| `ngram-mod` | repeats of text already in the context | Qwen3.6, Gemma 4 | Qwen3.6: 107.8 → 122.2 tok/s avg; 0 % cost when nothing repeats; code/translation up to 150 |
-| `draft-mtp` | the model's own multi-token-prediction head (separate small GGUF) | Qwen3.8, Gemma 4 | Qwen3.8: 33 → 70 tok/s; Gemma 4: 100 → 163 |
-| `draft-dflash` | a block-diffusion drafter (DFlash2) | tested on Qwen3.8 | same as MTP (69.0) — the model's sparse attention caps it at ~4 tokens per pass |
-| `draft-dspark` | DeepSeek's own draft head | DeepSeek | 23 → 33 tok/s (layer split); see SPEC-DECODING.md |
-
-Speculation helps most where output is predictable: tool calls (JSON), code edits, translation. It helps
-least in free prose at high temperature.
-
-### 3.6 Qwen3.8-Flash-Next: why ~70 and not 100+ tok/s
-
-Arithmetic says a 6B-active model should decode at ~100 tok/s *without* a drafter. We got 33–36, so we profiled it
-(`rocprofv3 --kernel-trace --stats` on `llama-bench -n 32`):
-
-- llama.cpp runs **~3,400 small GPU kernels per token** for this brand-new architecture (`qwen4exp`: Gated DeltaNet +
-  QSA sparse attention + hyper-connections + an n-gram embedding table). Each kernel costs a few microseconds
-  however little it does.
-- In tensor mode each card did only ¼ of the work, yet spent **the same 21 ms per token** — proof that the kernels
-  are latency-bound, not bandwidth-bound.
-
-What we tried, and what it gave (base decode, no drafter):
-
-| Change | tok/s |
-|---|---:|
-| ROCm layer split (start) | 32.6 |
-| ROCm tensor split / `GGML_CUDA_ALLREDUCE=internal` / RCCL build | 31.8–34.5 |
-| Vulkan layer split | 27.4 |
-| HIP graphs off / `GGML_CUDA_GRAPH_OPT=1` | 30.0 / 32.6 |
-| UD-Q4_K_XL instead of Q5 / 3 GPUs instead of 4 | 36.1 / 36.2 |
-| CPU `performance` governor | +1 % (reverted) |
-| GPU power profile **COMPUTE** | **35.5 (+9 %)** — kept, set at boot |
-| newest llama.cpp (e86f5fd, fused QSA kernels) | **36.1** — kept |
-| + MTP drafter, 4 tokens | **~70** |
-
-So 100+ for *every* kind of output is not reachable with today's llama.cpp; tool calls (78–97) are close.
-Two requests at once do not help either: each runs at ~38 tok/s (~69 total), because batching uses up the room
-that speculation relies on. Use Qwen3.8 for one hard conversation at a time; use the pool for many agents.
-llama.cpp is optimising this architecture actively (three relevant changes in the week of 20–27 Oct 2026), so:
-
-- **Re-test monthly**: `git clone` a new llama.cpp next to the others, build it (section 5), point the
-  `qwen3.8-flash-next` entry at it, run `bench_spec.py qwen3.8-flash-next`.
-- **Merged-tensor GGUF** (llama.cpp PR #31028, +7 % reported): needs re-converting from the original weights
-  (~360 GB download) — worth it once someone publishes such a GGUF.
-
-### 3.7 GPU power profile
-
-The cards now boot with the **COMPUTE** power profile (`/usr/local/sbin/gpu-tuning.sh`, block "power profile
-COMPUTE"; backup of the old script: `gpu-tuning.sh.bak-20261027`). It keeps clocks up between short kernels.
-Check with `rocm-smi --showprofile` (the active one has a `*`). The 250 W limit and fan curve are unchanged.
-
----
-
-## 4. Where things are
+## 6. Where things are
 
 | What | Where |
 |---|---|
-| llama-swap config | `~/.config/llama-swap/config.yaml` (backups `config.yaml.bak-20261027-*`) |
-| Pool launcher | `~/.config/llama-swap/llama-pool.py` (copy in this repo: `serving/llama-pool.py`) |
-| llama.cpp builds | `~/llama.cpp` (680a036, Bielik + DeepSeek-nospec), `~/llama.cpp-0ce8cd1` (ROCm, DeepSeek), `~/llama.cpp-0ce8cd1-vulkan` (Vulkan: Qwen3.6, Gemma 4), `~/llama.cpp-e86f5fd` (ROCm, newest: Qwen3.8) |
-| Models | `~/models/{qwen3.8-flash-next, qwen3.6-35b-a3b, gemma-4-26b-a4b, DeepSeek-V4-Flash-0731-GGUF, bielik-11b, embed}` |
-| Removed models | in the desktop trash (~490 GB): `gio trash --empty` frees the space for good |
+| llama-swap config | `~/.config/llama-swap/config.yaml` (backups `config.yaml.bak-2026*`; copy: `serving/llama-swap.yaml`) |
+| Docker model files | `~/.config/llama-swap/vllm/` (wrappers, `qwen3.6-fp8.compose.yml`), `~/.config/llama-swap/radiance/flashnext.compose.yml` (copies: `serving/docker/`) |
+| vLLM Radiance fork | `~/radiance-vllm-mxfp4` (launchers, notes `README.md`, `DOCKERHUB.md`) |
+| radiance engine | `~/radiance-engine` (docs `docs/GUIDE.md`, `docs/ARCHITECTURES.md`) |
+| Models | `~/models/qwen3.8-flash-next/{radiance, UD-Q5_K_XL, mtp…}`, `~/models/qwen3.8-flash-next-uncensored/radiance`, `~/models/Qwen3.6-35B-A3B-FP8`, `~/models/qwen3.6-35b-a3b/` (GGUF), `~/models/gemma-4-26b-a4b`, `~/models/bielik-11b`, `~/models/Qwen3.8-27B-*` |
+| llama.cpp builds | `~/llama.cpp-0ce8cd1-vulkan` (Gemma, Bielik), `~/llama.cpp-e86f5fd` (ROCm, Flash-Next fallback), `~/llama.cpp`, `~/llama.cpp-0ce8cd1` |
+| Benchmarks | `local-llm-perf-bench/server-bench/bench_stream.py` (any engine), `bench_spec.py`, `bench_conc.py` (llama.cpp only) |
+| `hf` CLI | `/usr/local/bin/hf` (system-wide) |
 
-Removed on 2026-10-27 (superseded): qwen3-235b-a22b (2 copies), gpt-oss-120b, laguna-s-2.1, qwen3-next-80b,
-qwen3-32b, gpt-oss-20b (and its CPU entry `gpt-oss-20b-cpu`; `agent-server.sh` still works with any GGUF via
-`AGENT_MODEL=`).
-
----
-
-## 5. Recipes
-
-**Run a different number of agents in the pool.** In the `qwen3.6-35b-a3b-x4` entry: `--slots 3` = agents per GPU,
-`--gpus 0,1,2,3` = which cards. More slots per card → more agents, each a bit slower (see 3.4); keep
-`--ctx-size` (shared per card) so that it still fits: ~20 KiB per token of context for Qwen3.6.
-
-**Add a model.** Download into its own folder under `~/models/`, run `bench-model <path> --quick`, copy the
-nearest existing entry in `config.yaml`, change `-m`, and (single-card MoE) try the Vulkan build first.
-llama-swap reloads the config by itself (`-watch-config`).
-
-**Measure like this guide did.**
+**Measure a model like this guide:**
 ```bash
 cd ~/Desktop/github_repos/local-llm-perf-bench/server-bench
-BENCH_REPS=1 python3 bench_spec.py <model> out.json          # one agent, 4 tasks x 2 temperatures
-BENCH_N=1,4,8,12 python3 bench_conc.py <model> out.json      # several agents at once
+BENCH_N=1,4,8 python3 bench_stream.py qwen3.8-flash-next 1.0 0.95 20 out.json   # model, temp, top-p, top-k
 ```
 
-**Build a llama.cpp (ROCm / Vulkan).**
-```bash
-git clone --depth 1 https://github.com/ggml-org/llama.cpp.git ~/llama.cpp-new && cd ~/llama.cpp-new
-# ROCm:
-HIPCXX="$(hipconfig -l)/clang" HIP_PATH="$(hipconfig -R)" cmake -S . -B build -DGGML_HIP=ON -DGPU_TARGETS=gfx1201 -DCMAKE_BUILD_TYPE=Release
-# or Vulkan:  source ~/vulkan-sdk/1.4.363.0/setup-env.sh && cmake -B build -DGGML_VULKAN=ON -DCMAKE_BUILD_TYPE=Release
-cmake --build build -j16 --target llama-server llama-bench
-```
+**Troubleshooting**
+- *A Docker model never becomes ready* — `docker ps -a`, `docker logs <name>` (names: `radiance-flashnext`,
+  `qwen36-vllm`, `qwen36-vllm-x4`). vLLM's first start compiles kernels (up to ~10 min); later starts 2–3 min.
+- *Memory alert* — `free -g`; `docker stats --no-stream`. Only one radiance model at a time; never radiance TP4.
+- *HTTP 429* — more parallel requests than the entry's `concurrencyLimit` (default 10).
+- *502 from a llama.cpp model* — usually out of VRAM at the first request; lower `--ctx-size`.
 
-**Profile a slow model** (what found the Qwen3.8 bottleneck):
-```bash
-rocprofv3 --kernel-trace --stats --output-format csv -d out -o run -- \
-  llama-bench -m <model.gguf> -ngl 999 -p 0 -n 32 -r 1
-# out/run_kernel_stats.csv: time and call count per kernel. Divide by ~33 tokens for "per token".
-```
-
-**Troubleshooting.**
-- *502 Bad Gateway / "upstream process exited"* — usually out of VRAM at the first request (compute buffers are
-  allocated then). Lower `--ctx-size`. Start the same command by hand to see `cudaMalloc failed: out of memory`.
-- *A GPU stays full after unloading* — a llama-server survived; `ss -tlnp | grep llama` and `kill <pid>`.
-  (Never `pkill -f` with a pattern that also matches your own command line.)
-- *Pool says `loading` forever* — one copy failed; `curl -m 5 localhost:8080/logs/stream/upstream` (or the Logs
-  page of the llama-swap UI) shows each copy's output prefixed `[gpuN]`.
-
-## 6. Security reminder
-
-llama-swap listens on `0.0.0.0:8080` without a password, and every model runs with `--agent`, whose built-in
-`exec_shell_command` tool runs commands as `mkoniu`. Anyone on the LAN can use both. Keep the rig on a trusted
-network (see SERWOWANIE-MODELI.md, section "Bezpieczeństwo").
+## 7. Security
+llama-swap (`:8080`) and Open WebUI (`:3000`) listen on the LAN; llama-swap has no password and the llama.cpp
+models run with `--agent`, whose built-in tools can run shell commands as `mkoniu`. The uncensored model answers
+anything. Keep the rig on a trusted network. Docker containers listen on 127.0.0.1 only.

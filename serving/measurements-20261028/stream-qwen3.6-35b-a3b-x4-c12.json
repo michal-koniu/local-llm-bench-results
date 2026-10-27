@@ -1,0 +1,56 @@
+{
+ "model": "qwen3.6-35b-a3b-x4",
+ "sampling": {
+  "temperature": 0.6,
+  "top_p": 0.95,
+  "top_k": 20
+ },
+ "url": "http://localhost:8080",
+ "date": "2026-10-27 22:36",
+ "results": [
+  {
+   "model": "qwen3.6-35b-a3b-x4",
+   "prompt": "chat",
+   "conc": 12,
+   "rep": 0,
+   "per_stream": 84.9,
+   "total": 1019.3,
+   "ttft": 141.17,
+   "gen": 700,
+   "prompt_tokens": 42
+  },
+  {
+   "model": "qwen3.6-35b-a3b-x4",
+   "prompt": "chat",
+   "conc": 12,
+   "rep": 1,
+   "per_stream": 85.5,
+   "total": 1025.8,
+   "ttft": 0.11,
+   "gen": 700,
+   "prompt_tokens": 42
+  },
+  {
+   "model": "qwen3.6-35b-a3b-x4",
+   "prompt": "code16k",
+   "conc": 12,
+   "rep": 0,
+   "per_stream": 77.8,
+   "total": 933.1,
+   "ttft": 2.03,
+   "gen": 700,
+   "prompt_tokens": 13634
+  },
+  {
+   "model": "qwen3.6-35b-a3b-x4",
+   "prompt": "code16k",
+   "conc": 12,
+   "rep": 1,
+   "per_stream": 79.6,
+   "total": 954.8,
+   "ttft": 0.17,
+   "gen": 700,
+   "prompt_tokens": 13634
+  }
+ ]
+}

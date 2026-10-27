@@ -1,0 +1,56 @@
+{
+ "model": "bielik-11b",
+ "sampling": {
+  "temperature": 0.8,
+  "top_p": 0.95,
+  "top_k": 40
+ },
+ "url": "http://localhost:8080",
+ "date": "2026-10-27 22:29",
+ "results": [
+  {
+   "model": "bielik-11b",
+   "prompt": "chat",
+   "conc": 1,
+   "rep": 0,
+   "per_stream": 47.7,
+   "total": 47.7,
+   "ttft": 9.68,
+   "gen": 700,
+   "prompt_tokens": 239
+  },
+  {
+   "model": "bielik-11b",
+   "prompt": "chat",
+   "conc": 1,
+   "rep": 1,
+   "per_stream": 47.9,
+   "total": 47.9,
+   "ttft": 0.08,
+   "gen": 329,
+   "prompt_tokens": 239
+  },
+  {
+   "model": "bielik-11b",
+   "prompt": "code16k",
+   "conc": 1,
+   "rep": 0,
+   "per_stream": 37.4,
+   "total": 37.4,
+   "ttft": 10.09,
+   "gen": 700,
+   "prompt_tokens": 17522
+  },
+  {
+   "model": "bielik-11b",
+   "prompt": "code16k",
+   "conc": 1,
+   "rep": 1,
+   "per_stream": 37.5,
+   "total": 37.5,
+   "ttft": 0.07,
+   "gen": 700,
+   "prompt_tokens": 17522
+  }
+ ]
+}

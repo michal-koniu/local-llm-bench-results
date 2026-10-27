@@ -1,0 +1,72 @@
+qwen3.8-flash-next               chat     conc  1 rep 0:  117.9 tok/s per stream,  117.9 total, ttft 28.72s, prompt 84
+qwen3.8-flash-next               chat     conc  1 rep 1:  143.9 tok/s per stream,  143.9 total, ttft  0.06s, prompt 84
+qwen3.8-flash-next               code16k  conc  1 rep 0:  138.5 tok/s per stream,  138.5 total, ttft  3.72s, prompt 13672
+qwen3.8-flash-next               code16k  conc  1 rep 1:  133.2 tok/s per stream,  133.2 total, ttft  0.05s, prompt 13672
+qwen3.8-flash-next               chat     conc  4 rep 0:   88.2 tok/s per stream,  352.9 total, ttft  0.18s, prompt 84
+qwen3.8-flash-next               chat     conc  4 rep 1:   90.1 tok/s per stream,  360.4 total, ttft  0.08s, prompt 84
+qwen3.8-flash-next               code16k  conc  4 rep 0:   89.6 tok/s per stream,  358.3 total, ttft  0.14s, prompt 13672
+qwen3.8-flash-next               code16k  conc  4 rep 1:   88.0 tok/s per stream,  352.0 total, ttft  0.07s, prompt 13672
+qwen3.8-flash-next               chat     conc  8 rep 0:   69.0 tok/s per stream,  551.7 total, ttft  0.06s, prompt 84
+qwen3.8-flash-next               chat     conc  8 rep 1:   67.6 tok/s per stream,  541.1 total, ttft  0.16s, prompt 84
+qwen3.8-flash-next               code16k  conc  8 rep 0:   69.9 tok/s per stream,  559.5 total, ttft  0.19s, prompt 13672
+qwen3.8-flash-next               code16k  conc  8 rep 1:   69.1 tok/s per stream,  553.2 total, ttft  0.17s, prompt 13672
+qwen3.8-flash-next-uncensored    chat     conc  1 rep 0:  121.9 tok/s per stream,  121.9 total, ttft 27.08s, prompt 84
+qwen3.8-flash-next-uncensored    chat     conc  1 rep 1:  144.6 tok/s per stream,  144.6 total, ttft  0.06s, prompt 84
+qwen3.8-flash-next-uncensored    code16k  conc  1 rep 0:  117.4 tok/s per stream,  117.4 total, ttft  3.63s, prompt 13672
+qwen3.8-flash-next-uncensored    code16k  conc  1 rep 1:  139.7 tok/s per stream,  139.7 total, ttft  0.05s, prompt 13672
+qwen3.6-35b-a3b                  chat     conc  1 rep 0:  138.4 tok/s per stream,  138.4 total, ttft 108.35s, prompt 42
+qwen3.6-35b-a3b                  chat     conc  1 rep 1:  147.2 tok/s per stream,  147.2 total, ttft  0.04s, prompt 42
+qwen3.6-35b-a3b                  code16k  conc  1 rep 0:  159.2 tok/s per stream,  159.2 total, ttft  1.00s, prompt 13634
+qwen3.6-35b-a3b                  code16k  conc  1 rep 1:  171.9 tok/s per stream,  171.9 total, ttft  0.20s, prompt 13634
+qwen3.6-35b-a3b                  chat     conc  8 rep 0:   87.4 tok/s per stream,  698.9 total, ttft  0.14s, prompt 42
+qwen3.6-35b-a3b                  chat     conc  8 rep 1:   89.9 tok/s per stream,  718.9 total, ttft  0.10s, prompt 42
+qwen3.6-35b-a3b                  code16k  conc  8 rep 0:   92.5 tok/s per stream,  740.3 total, ttft  0.74s, prompt 13634
+qwen3.6-35b-a3b                  code16k  conc  8 rep 1:   90.4 tok/s per stream,  723.1 total, ttft  1.41s, prompt 13634
+qwen3.6-35b-a3b-x4               chat     conc  1 rep 0:  140.7 tok/s per stream,  140.7 total, ttft 113.57s, prompt 42
+qwen3.6-35b-a3b-x4               chat     conc  1 rep 1:  163.6 tok/s per stream,  163.6 total, ttft  0.04s, prompt 42
+qwen3.6-35b-a3b-x4               code16k  conc  1 rep 0:  197.0 tok/s per stream,  197.0 total, ttft  1.26s, prompt 13634
+qwen3.6-35b-a3b-x4               code16k  conc  1 rep 1:  246.4 tok/s per stream,  246.4 total, ttft  0.14s, prompt 13634
+qwen3.6-35b-a3b-x4               chat     conc  8 rep 0:  101.0 tok/s per stream,  807.8 total, ttft  0.13s, prompt 42
+qwen3.6-35b-a3b-x4               chat     conc  8 rep 1:  102.0 tok/s per stream,  816.4 total, ttft  0.11s, prompt 42
+qwen3.6-35b-a3b-x4               code16k  conc  8 rep 0:  105.3 tok/s per stream,  842.2 total, ttft  0.52s, prompt 13634
+qwen3.6-35b-a3b-x4               code16k  conc  8 rep 1:  104.9 tok/s per stream,  839.0 total, ttft  0.78s, prompt 13634
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 429: Too Many Requests
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 429: Too Many Requests
+qwen3.6-35b-a3b-x4               chat     conc 12 rep 0:   91.8 tok/s per stream, 1101.1 total, ttft  0.89s, prompt 42
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 429: Too Many Requests
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 429: Too Many Requests
+qwen3.6-35b-a3b-x4               chat     conc 12 rep 1:   93.9 tok/s per stream, 1126.2 total, ttft  0.04s, prompt 42
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 429: Too Many Requests
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 429: Too Many Requests
+qwen3.6-35b-a3b-x4               code16k  conc 12 rep 0:   91.7 tok/s per stream, 1100.0 total, ttft  0.51s, prompt 13634
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 429: Too Many Requests
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 429: Too Many Requests
+qwen3.6-35b-a3b-x4               code16k  conc 12 rep 1:   93.7 tok/s per stream, 1124.5 total, ttft  0.53s, prompt 13634
+gemma-4-26b-a4b                  chat     conc  1 rep 0:  135.3 tok/s per stream,  135.3 total, ttft 21.46s, prompt 46
+gemma-4-26b-a4b                  chat     conc  1 rep 1:  144.7 tok/s per stream,  144.7 total, ttft  0.17s, prompt 46
+gemma-4-26b-a4b                  code16k  conc  1 rep 0:  175.3 tok/s per stream,  175.3 total, ttft  4.56s, prompt 16154
+gemma-4-26b-a4b                  code16k  conc  1 rep 1:  168.6 tok/s per stream,  168.6 total, ttft  0.18s, prompt 16154
+gemma-4-26b-a4b                  chat     conc  2 rep 0:   92.8 tok/s per stream,  185.7 total, ttft  0.39s, prompt 46
+gemma-4-26b-a4b                  chat     conc  2 rep 1:   92.8 tok/s per stream,  185.7 total, ttft  0.85s, prompt 46
+gemma-4-26b-a4b                  code16k  conc  2 rep 0:   92.7 tok/s per stream,  185.4 total, ttft  1.40s, prompt 16154
+gemma-4-26b-a4b                  code16k  conc  2 rep 1:  116.4 tok/s per stream,  232.8 total, ttft  0.92s, prompt 16154
+bielik-11b                       chat     conc  1 rep 0:   47.7 tok/s per stream,   47.7 total, ttft  9.68s, prompt 239
+bielik-11b                       chat     conc  1 rep 1:   47.9 tok/s per stream,   47.9 total, ttft  0.08s, prompt 239
+bielik-11b                       code16k  conc  1 rep 0:   37.4 tok/s per stream,   37.4 total, ttft 10.09s, prompt 17522
+bielik-11b                       code16k  conc  1 rep 1:   37.5 tok/s per stream,   37.5 total, ttft  0.07s, prompt 17522
+qwen3.8-flash-next-llamacpp      chat     conc  1 rep 0:   50.0 tok/s per stream,   50.0 total, ttft 35.74s, prompt 84
+qwen3.8-flash-next-llamacpp      chat     conc  1 rep 1:   51.3 tok/s per stream,   51.3 total, ttft  0.16s, prompt 84
+qwen3.8-flash-next-llamacpp      code16k  conc  1 rep 0:   43.6 tok/s per stream,   43.6 total, ttft  6.45s, prompt 13672
+qwen3.8-flash-next-llamacpp      code16k  conc  1 rep 1:   45.5 tok/s per stream,   45.5 total, ttft  0.10s, prompt 13672
+qwen3.8-flash-next-llamacpp      chat     conc  2 rep 0:   38.2 tok/s per stream,   76.3 total, ttft  0.72s, prompt 84
+qwen3.8-flash-next-llamacpp      chat     conc  2 rep 1:   38.6 tok/s per stream,   77.2 total, ttft  1.16s, prompt 84
+qwen3.8-flash-next-llamacpp      code16k  conc  2 rep 0:   28.6 tok/s per stream,   57.1 total, ttft  8.59s, prompt 13672
+qwen3.8-flash-next-llamacpp      code16k  conc  2 rep 1:   32.9 tok/s per stream,   65.8 total, ttft  1.85s, prompt 13672

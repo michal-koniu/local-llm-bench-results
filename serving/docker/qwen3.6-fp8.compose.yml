@@ -1,0 +1,72 @@
+# Qwen3.6-35B-A3B FP8 on vLLM "Radiance" (R9700 / gfx1201 build), started and stopped by llama-swap.
+# Based on ~/radiance-vllm-mxfp4/docker-compose.yml; differences are marked "CHANGED".
+# Variables come from llama-swap (see config.yaml): PORT, NAME, GPUS, TP, DP, SEQS, KVDT, MAXLEN.
+name: ${NAME:-qwen36-vllm}
+services:
+  vllm:
+    image: stilldeadcode/vllm-radiance:0.9.3
+    container_name: ${NAME:-qwen36-vllm}
+    restart: "no"                                   # CHANGED: llama-swap decides when it runs
+    command:
+      - /models/Qwen3.6-35B-A3B-FP8
+      - --served-model-name=qwen3.6-35b-a3b
+      - --quantization=fp8
+      - --tensor-parallel-size=${TP:-2}
+      - --data-parallel-size=${DP:-1}                # copies of the model, each on TP cards; requests are balanced between them
+      - --max-num-seqs=${SEQS:-8}
+      - --max-model-len=${MAXLEN:-131072}
+      - --gpu-memory-utilization=0.94               # CHANGED: leave room for the desktop on card 0
+      - --max-num-batched-tokens=4096               # must be >= 2240 for this model (Radiance DOCKERHUB.md)
+      - --kv-cache-dtype=${KVDT:-auto}              # CHANGED: auto = bf16, lossless; fp8 is uncalibrated here
+      - --attention-backend=ROCM_AITER_UNIFIED_ATTN
+      - --enable-prefix-caching
+      - --mamba-cache-mode=align
+      - '--speculative-config={"method":"mtp","num_speculative_tokens":8,"attention_backend":"ROCM_AITER_UNIFIED_ATTN","disable_padded_drafter_batch":true}'
+      - '--compilation-config={"cudagraph_capture_sizes":[1,2,4,8,16,24,32,40,48,56,64,72]}'
+      - '--override-generation-config={"temperature":0.6,"top_p":0.95,"top_k":20,"presence_penalty":0.0}'  # CHANGED: Qwen coding defaults, same as llama.cpp entry
+      - --no-async-scheduling
+      - --enable-auto-tool-choice
+      - --tool-call-parser=qwen3_coder
+      - --reasoning-parser=qwen3
+      - --chat-template=/work/qwen-fixed-v22.3.jinja
+      - --language-model-only
+      - --trust-remote-code
+      - --host=0.0.0.0
+      - --port=8000
+    environment:
+      HIP_VISIBLE_DEVICES: "${GPUS:-2,3}"
+      VLLM_NO_USAGE_STATS: "1"
+      VLLM_ROCM_USE_AITER: "1"
+      VLLM_ROCM_USE_AITER_UNIFIED_ATTENTION: "1"
+      VLLM_ROCM_USE_AITER_MHA: "0"
+      VLLM_ROCM_USE_AITER_MLA: "0"
+      VLLM_ROCM_USE_AITER_MOE: "0"
+      VLLM_ROCM_USE_AITER_LINEAR: "0"
+      VLLM_ROCM_USE_AITER_FP8BMM: "0"
+      VLLM_ROCM_USE_AITER_FP4BMM: "0"
+      VLLM_ROCM_USE_AITER_RMSNORM: "0"
+      RADIANCE_FUSE_RMS_QUANT: "1"
+      RADIANCE_USE_R4D: "1"
+      RADIANCE_USE_R4D_AR: "1"
+      RADIANCE_USE_R4D_AR_QUANT: "1"
+      RADIANCE_DYNAMIC_DRAFT: "1"
+      RADIANCE_DRAFT_SCHEDULE: "1:8,2:7,4:6,8:5,16:4"
+      RADIANCE_DRAFT_TAU: "0.28"
+      RADIANCE_FAST_DRAFT: "1"
+      NCCL_PROTO: Simple
+      TORCHINDUCTOR_COMPILE_THREADS: "4"
+      VLLM_CACHE_ROOT: /cache/vllm
+      TORCHINDUCTOR_CACHE_DIR: /cache/inductor
+      TRITON_CACHE_DIR: /cache/triton
+      AITER_ROOT_DIR: /cache/aiter
+      TRITON_CACHE_AUTOTUNING: "1"
+    devices: ["/dev/kfd:/dev/kfd", "/dev/dri:/dev/dri"]
+    group_add: ["992", "44"]                         # render, video
+    cap_add: [SYS_PTRACE, SYS_NICE]
+    security_opt: [seccomp=unconfined]
+    ipc: host
+    ports: ["127.0.0.1:${PORT:-8000}:8000"]          # CHANGED: localhost only; llama-swap is the LAN entry point
+    volumes:
+      - /home/mkoniu/models:/models:ro
+      - /home/mkoniu/radiance-vllm-mxfp4/vllm-cache:/cache
+      - /home/mkoniu/radiance-vllm-mxfp4:/work:ro
