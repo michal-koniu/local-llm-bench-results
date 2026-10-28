@@ -13,10 +13,17 @@ Two ways to run it:
            llama-server already has its own shell and file tools (--tools all).
 
 Every overwrite or edit first copies the old file to ~/.cache/rig-tools/backups/.
-"""
-import argparse, datetime, os, pathlib, shutil, subprocess
 
-from mcp.server.fastmcp import FastMCP
+sudo, always with the user's confirmation:
+  request_sudo(command, reason) -> a one-time approval link the model must show the user;
+  sudo_result(request_id)       -> waits for the user's decision and returns the output.
+The approval page (--approve-port, on the LAN) shows the exact command and asks for the sudo password; the command
+runs with `sudo -k -S` (no cached credentials), the password goes from the browser to sudo's stdin and is never
+stored or logged. Without the password nothing runs. The --stdio process forwards both tools to the --http one.
+"""
+import argparse, asyncio, datetime, html, os, pathlib, secrets, shutil, subprocess, time
+
+from mcp.server.fastmcp import Context, FastMCP
 
 HOME = pathlib.Path.home()
 BACKUPS = HOME / ".cache" / "rig-tools" / "backups"
@@ -129,11 +136,195 @@ def add_web_tools(mcp: FastMCP) -> None:
         return f"HTTP {r.status_code} {r.url} ({ctype})\n\n" + _clip(text, max_chars)
 
 
+# ---------------------------------------------------------------- sudo with confirmation
+
+APPROVE_URL = "http://192.168.0.39:8766"   # what the user's browser opens; set by --approve-url
+REQS = {}                                   # request_id -> dict(command, workdir, reason, state, output, ...)
+REQ_TTL = 900                               # an approval link works for 15 minutes
+MAX_TRIES = 3                               # wrong passwords before the request is cancelled
+
+
+def _new_request(command, workdir, reason):
+    for rid in [r for r, q in REQS.items() if time.time() - q["created"] > 3600]:
+        REQS.pop(rid)
+    rid = secrets.token_urlsafe(16)
+    REQS[rid] = {"command": command, "workdir": workdir, "reason": reason, "created": time.time(),
+                 "state": "pending", "output": "", "tries": 0, "event": asyncio.Event()}
+    return rid
+
+
+def _state(rid):
+    q = REQS.get(rid)
+    if q and q["state"] == "pending" and time.time() - q["created"] > REQ_TTL:
+        q["state"] = "expired"; q["event"].set()
+    return q
+
+
+def _link(rid):
+    return f"{APPROVE_URL}/sudo/{rid}"
+
+
+def _created_text(rid, command):
+    return (f"Approval needed. Show this link to the user and ask them to approve or deny it: {_link(rid)}\n"
+            f"Command: {command}\nThe link works for {REQ_TTL // 60} minutes. Then call "
+            f"sudo_result(request_id=\"{rid}\") to wait for the decision and get the output.")
+
+
+def _result_text(q):
+    if q is None:
+        return "unknown request id"
+    if q["state"] == "done":
+        return f"approved by the user and run as root.\n{q['output']}"
+    return {"pending": "still waiting for the user (link not answered yet); call sudo_result again",
+            "denied": "the user DENIED this command. Do not retry it; ask the user what to do instead.",
+            "expired": "the approval link expired without an answer; nothing was run.",
+            "failed": "cancelled after too many wrong passwords; nothing was run."}.get(q["state"], q["state"])
+
+
+async def _wait(rid, wait_seconds):
+    q = _state(rid)
+    if q and q["state"] == "pending":
+        try:
+            await asyncio.wait_for(q["event"].wait(), timeout=max(1, min(wait_seconds, REQ_TTL)))
+        except asyncio.TimeoutError:
+            pass
+        q = _state(rid)
+    return _result_text(q)
+
+
+def _run_sudo(q, password):
+    try:
+        r = subprocess.run(["sudo", "-k", "-S", "-p", "", "--", "bash", "-c", q["command"]],
+                           input=password + "\n", cwd=_path(q["workdir"]), stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT, text=True, timeout=1800)
+        out = r.stdout
+        if r.returncode == 1 and ("incorrect password" in out or "Sorry, try again" in out or "no password" in out):
+            return None
+        return f"exit code {r.returncode}\n" + _clip(out)
+    except subprocess.TimeoutExpired:
+        return "timed out after 1800s"
+
+
+PAGE = """<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>sudo approval</title><style>body{{font-family:system-ui,sans-serif;max-width:46rem;margin:2rem auto;padding:0 1rem;
+color:#1b1b1b;background:#fafafa}}pre{{background:#111;color:#eee;padding:1rem;overflow-x:auto;white-space:pre-wrap;
+border-radius:6px}}button{{font-size:1rem;padding:.5rem 1.2rem;margin-right:.5rem}}input{{font-size:1rem;padding:.4rem;
+width:16rem}}.warn{{color:#a00}}</style>
+<h1>A local model asks to run this as root</h1>{body}"""
+
+
+def _page(rid, msg=""):
+    q = _state(rid)
+    if q is None:
+        return PAGE.format(body="<p>Unknown or old request.</p>")
+    e = html.escape
+    head = (f"<p><b>Reason given by the model:</b> {e(q['reason'] or '(none)')}</p><p><b>Working directory:</b> "
+            f"{e(q['workdir'])}</p><p><b>Command (runs exactly as shown, with sudo):</b></p><pre>{e(q['command'])}</pre>")
+    if q["state"] != "pending":
+        return PAGE.format(body=head + f"<p><b>Status:</b> {e(_result_text(q))}</p>"
+                           + (f"<pre>{e(q['output'])}</pre>" if q["state"] == "done" else ""))
+    return PAGE.format(body=head + (f"<p class=warn>{e(msg)}</p>" if msg else "") +
+                       '<form method="post"><p><label>Your sudo password: <input type="password" name="password" '
+                       'autocomplete="off" autofocus></label></p><button name="action" value="approve">Approve and run'
+                       '</button><button name="action" value="deny">Deny</button></form>'
+                       "<p>Nothing runs unless you approve with your password. The password is passed to sudo once "
+                       "and not stored.</p>")
+
+
+def approval_app():
+    from starlette.applications import Starlette
+    from starlette.responses import HTMLResponse
+    from starlette.routing import Route
+
+    async def show(request):
+        return HTMLResponse(_page(request.path_params["rid"]))
+
+    async def answer(request):
+        rid = request.path_params["rid"]
+        q = _state(rid)
+        if q is None or q["state"] != "pending":
+            return HTMLResponse(_page(rid))
+        form = await request.form()
+        if form.get("action") != "approve":
+            q["state"] = "denied"; q["event"].set()
+            return HTMLResponse(_page(rid))
+        q["state"] = "running"
+        out = await asyncio.to_thread(_run_sudo, q, form.get("password") or "")
+        if out is None:
+            q["tries"] += 1
+            q["state"] = "pending" if q["tries"] < MAX_TRIES else "failed"
+            if q["state"] == "failed":
+                q["event"].set()
+            return HTMLResponse(_page(rid, "Wrong password." if q["state"] == "pending" else ""))
+        q["state"], q["output"] = "done", out
+        q["event"].set()
+        return HTMLResponse(_page(rid))
+
+    return Starlette(routes=[Route("/sudo/{rid}", show, methods=["GET"]),
+                             Route("/sudo/{rid}", answer, methods=["POST"])])
+
+
+def add_sudo_tools(mcp: FastMCP, forward_to=None, token=""):
+    """forward_to: base URL of the --http rig-tools (used by --stdio, which has no approval page of its own)."""
+    def fwd(path, body):
+        import httpx
+        r = httpx.post(forward_to + path, json=body, headers={"Authorization": "Bearer " + token}, timeout=REQ_TTL + 30)
+        return r.json()["text"]
+
+    @mcp.tool()
+    async def request_sudo(command: str, reason: str, workdir: str = "~", ctx: Context = None) -> str:
+        """Ask the user to approve running a command as root (sudo); the user approves with their password on an
+        approval page, or denies. In Open WebUI the page opens as a dialog and this returns the result directly.
+        Otherwise it returns a link that you MUST show the user; then call sudo_result."""
+        if forward_to:
+            return await asyncio.to_thread(fwd, "/sudo-api/request", {"command": command, "reason": reason, "workdir": workdir})
+        rid = _new_request(command, workdir, reason)
+        if ctx is not None:
+            try:   # URL elicitation: Open WebUI shows the link to the user; the model never sees the password
+                r = await asyncio.wait_for(ctx.elicit_url(
+                    message=f"A local model asks to run this as root:\n{command}\nReason: {reason}\n"
+                            "Open the link, check the command, approve with your sudo password or deny, then come back.",
+                    url=_link(rid), elicitation_id=rid), timeout=REQ_TTL)
+                if r.action == "decline":
+                    q = _state(rid)
+                    if q["state"] == "pending":
+                        q["state"] = "denied"; q["event"].set()
+                    return _result_text(q)
+                if r.action == "accept":
+                    return await _wait(rid, REQ_TTL)
+            except Exception:
+                pass        # client without URL elicitation: fall back to the link
+        return _created_text(rid, command)
+
+    @mcp.tool()
+    async def sudo_result(request_id: str, wait_seconds: int = 300) -> str:
+        """Wait (up to wait_seconds) for the user's decision on a request_sudo link; returns the command output,
+        or that it was denied/expired. Call again if it is still pending."""
+        if forward_to:
+            return await asyncio.to_thread(fwd, "/sudo-api/result", {"request_id": request_id, "wait_seconds": wait_seconds})
+        return await _wait(request_id, wait_seconds)
+
+
+async def sudo_api(scope, receive, send):
+    """/sudo-api/* on the token-protected MCP port, for the --stdio processes."""
+    from starlette.requests import Request
+    from starlette.responses import JSONResponse
+    req = Request(scope, receive)
+    b = await req.json()
+    if scope["path"].endswith("/request"):
+        text = _created_text(_new_request(b["command"], b.get("workdir", "~"), b.get("reason", "")), b["command"])
+    else:
+        text = await _wait(b["request_id"], int(b.get("wait_seconds", 300)))
+    await JSONResponse({"text": text})(scope, receive, send)
+
+
 INSTRUCTIONS = ("Tools on the user's local AI rig: local shell and files as user mkoniu, "
-                "plus web search and page fetching on the public internet.")
+                "plus web search and page fetching on the public internet, "
+                "and root commands only through request_sudo, which always needs the user's approval.")
 
 
 def main() -> None:
+    global APPROVE_URL
     ap = argparse.ArgumentParser()
     ap.add_argument("--http", action="store_true")
     ap.add_argument("--stdio", action="store_true")
@@ -141,20 +332,28 @@ def main() -> None:
     ap.add_argument("--host", default="172.17.0.1")
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--token-file", default=str(HOME / ".config" / "rig-tools" / "token"))
+    ap.add_argument("--approve-host", default="0.0.0.0")          # the approval page must be reachable from the LAN
+    ap.add_argument("--approve-port", type=int, default=8766)
+    ap.add_argument("--approve-url", default=APPROVE_URL)
+    ap.add_argument("--forward", default="http://172.17.0.1:8765")  # --stdio: where the --http rig-tools runs
     a = ap.parse_args()
+    APPROVE_URL = a.approve_url
+    token = pathlib.Path(a.token_file).read_text().strip()
 
-    # host other than localhost: FastMCP does not add DNS-rebinding checks; the bearer token protects it
-    mcp = FastMCP("rig-tools", instructions=INSTRUCTIONS, host=a.host, port=a.port, stateless_http=True)
+    # host other than localhost: FastMCP does not add DNS-rebinding checks; the bearer token protects it.
+    # Stateful sessions: request_sudo's approval dialog (URL elicitation) needs the client's answer routed back.
+    mcp = FastMCP("rig-tools", instructions=INSTRUCTIONS, host=a.host, port=a.port)
     if not a.web_only:
         add_local_tools(mcp)
     add_web_tools(mcp)
 
     if a.stdio:
+        add_sudo_tools(mcp, forward_to=a.forward, token=token)
         mcp.run(transport="stdio")
         return
 
     import uvicorn
-    token = pathlib.Path(a.token_file).read_text().strip()
+    add_sudo_tools(mcp)
     app = mcp.streamable_http_app()
 
     async def guarded(scope, receive, send):
@@ -165,9 +364,24 @@ def main() -> None:
                             "headers": [(b"content-type", b"text/plain")]})
                 await send({"type": "http.response.body", "body": b"unauthorized"})
                 return
+            if scope["path"].startswith("/sudo-api/"):
+                await sudo_api(scope, receive, send)
+                return
         await app(scope, receive, send)
 
-    uvicorn.run(guarded, host=a.host, port=a.port, log_level="warning")
+    async def serve():
+        # open MCP streams would otherwise keep a stop/restart waiting forever
+        tools = uvicorn.Server(uvicorn.Config(guarded, host=a.host, port=a.port, log_level="warning",
+                                              timeout_graceful_shutdown=5))
+        page = uvicorn.Server(uvicorn.Config(approval_app(), host=a.approve_host, port=a.approve_port,
+                                             log_level="warning", access_log=False, timeout_graceful_shutdown=5))
+
+        def stop_both(sig, frame):          # each server installs its own signal handler; stop both on SIGTERM
+            tools.should_exit = page.should_exit = True
+        tools.handle_exit = page.handle_exit = stop_both
+        await asyncio.gather(tools.serve(), page.serve())
+
+    asyncio.run(serve())
 
 
 if __name__ == "__main__":
