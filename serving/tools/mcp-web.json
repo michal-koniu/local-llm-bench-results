@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "rig-web": {
+      "command": "/home/mkoniu/.local/share/rig-tools/venv/bin/python",
+      "args": ["/home/mkoniu/.config/llama-swap/tools/rig_tools.py", "--stdio", "--web-only"]
+    }
+  }
+}

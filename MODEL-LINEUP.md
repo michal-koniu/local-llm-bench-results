@@ -121,6 +121,58 @@ window that still fits when several agents are long at once:
   connected to llama-swap. The first account you create becomes the admin. Container `open-webui`
   (`docker restart open-webui`; data in the Docker volume `open-webui`).
 
+### Tools and self-knowledge (both chat UIs)
+Every model in both chat UIs has the same abilities and is told about them at the start of every chat:
+
+| | Open WebUI (all 7 models) | llama.cpp chat UI (Gemma, Bielik, Flash-Next fallback) |
+|---|---|---|
+| Shell as `mkoniu` (Docker allowed, no sudo) | `run_command` | `exec_shell_command` (built in, `--agent`) |
+| Files | `read_file`, `list_directory`, `write_file`, `edit_file` (auto-backup to `~/.cache/rig-tools/backups/`) | `read_file`, `file_glob_search`, `grep_search`, `write_file`, `edit_file`, `get_info` |
+| Internet | `web_search`, `fetch_url` | `rig-web_web_search`, `rig-web_fetch_url` |
+| Root, only with your approval | `request_sudo` (+ `sudo_result`) | `rig-web_request_sudo` (+ `rig-web_sudo_result`) |
+| Where they come from | tool server **rig-tools** (MCP, `http://172.17.0.1:8765/mcp`, bearer token) | llama-server `--tools all` + `--mcp-servers-config tools/mcp-web.json` (rig-tools `--stdio --web-only`) |
+
+**System prompt per model**, generated from `config.yaml` by `~/.config/llama-swap/tools/sync_prompts.py`:
+who the model is (name, id, description), engine, GPUs and its exact start command, its config files, the machine
+and services, its tools (including internet), rules for changing its own configuration (back up, validate YAML,
+measure with bench_stream.py, saving config.yaml restarts the model, anything needing sudo is handed to the user as
+numbered steps), and `~/.config/llama-swap/AGENT_BOOTSTRAP.md` verbatim (Tor proxy, `~/ai_skills`, policy).
+The prompts are readable in `~/.config/llama-swap/prompts/<id>.<ui>.md`.
+
+**After changing config.yaml** (or AGENT_BOOTSTRAP.md), run — the models know to do this themselves:
+```bash
+python3 ~/.config/llama-swap/tools/sync_prompts.py     # needs the docker group for the Open WebUI part
+```
+It writes `~/.config/llama-swap/ui/<id>.json` (llama.cpp UI defaults: system prompt, agentic turns) and, through
+Open WebUI's admin API, the rig-tools connection, "tools on by default" and each model's system prompt.
+In the llama.cpp UI the prompt is a default: if you once typed your own system message in Settings, yours wins.
+
+**Not covered:** API clients (OpenClaw, opencode, scripts) send their own system prompt and tools, so they get neither.
+
+**sudo, always with your confirmation.** The models have no sudo of their own: no password is stored anywhere, and
+their shell cannot use sudo (tested: `sudo -n true` fails, also right after an approved command). To run something
+as root a model calls `request_sudo(command, reason)`:
+1. rig-tools creates a one-time approval page, `http://192.168.0.39:8766/sudo/<id>` (valid 15 min). In Open WebUI it
+   opens as a dialog in the chat; elsewhere the model shows you the link (the prompt tells it to explain first).
+2. The page shows the exact command, working directory and the model's reason, with a password field and
+   **Approve and run** / **Deny**.
+3. Approve = your sudo password. rig-tools passes it once to `sudo -k -S` (no cached credentials, nothing stored or
+   logged) and runs exactly that command; 3 wrong passwords cancel the request; a used link cannot run again.
+4. The model gets the output (or "denied"/"expired") via `sudo_result`; denied means it must not retry.
+Tested 27-28 Oct: deny, wrong password, approve (`id -u` -> 0), link reuse, over both the HTTP and the stdio path.
+Code: `request_sudo`, `sudo_result` and `approval_app()` in `tools/rig_tools.py`.
+
+**Tested (27 Oct), Open WebUI, question "which model are you, where is your config; run `hostname && uptime -p`;
+find the newest Open WebUI release":** all three engines answered identity and config paths correctly and used the
+shell and web tools -- Gemma (llama.cpp) in 9 s, Qwen3.6 (vLLM) and Qwen3.8-Flash-Next (radiance) in ~135 s
+including cold start. Qwen3.6 and Flash-Next also checked the GitHub releases page/API themselves when the search
+snippet was outdated; Flash-Next verified its own entry against `localhost:8080/running` and config.yaml.
+llama.cpp UI (Gemma, Bielik): system prompt served as UI default, all 9 tools listed from the LAN origin.
+
+**rig-tools service:** `systemctl status rig-tools`; code `~/.config/llama-swap/tools/rig_tools.py`; Python venv
+`~/.local/share/rig-tools/venv` (`tools/requirements.txt`, `mcp<2`); token `~/.config/rig-tools/token` (chmod 600,
+also stored in Open WebUI). It listens only on the Docker bridge (172.17.0.1), not on the LAN.
+
 ### OpenClaw
 `~/.openclaw/openclaw.json` (field names as of autumn 2026 — `openclaw doctor` shows differences):
 ```json
@@ -313,6 +365,9 @@ BENCH_N=1,4,8 python3 bench_stream.py qwen3.8-flash-next 1.0 0.95 20 out.json   
 - *502 from a llama.cpp model* — usually out of VRAM at the first request; lower `--ctx-size`.
 
 ## 7. Security
-llama-swap (`:8080`) and Open WebUI (`:3000`) listen on the LAN; llama-swap has no password and the llama.cpp
-models run with `--agent`, whose built-in tools can run shell commands as `mkoniu`. The uncensored model answers
+llama-swap (`:8080`) and Open WebUI (`:3000`) listen on the LAN. The models can run shell commands as `mkoniu`
+(who is in the docker group, which is root-equivalent) and reach the internet. In Open WebUI only admin accounts get
+the rig-tools tools (connection without access grants); llama-swap has no password, so anyone on the LAN can use the
+llama.cpp chat UI and its tools. Root needs your password on the approval page for every single command
+(port 8766, LAN, plain HTTP like the rest -- someone sniffing your LAN could see the password; use it at home only). The uncensored model answers
 anything. Keep the rig on a trusted network. Docker containers listen on 127.0.0.1 only.

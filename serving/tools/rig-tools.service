@@ -1,0 +1,20 @@
+# Tool server for the local models (Open WebUI connects to it). Source: ~/.config/llama-swap/tools/rig_tools.py
+# Install: sudo cp ~/.config/llama-swap/tools/rig-tools.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable --now rig-tools
+[Unit]
+Description=rig-tools MCP server (shell, files, web, sudo with approval page on :8766) for local models
+After=docker.service network-online.target
+Wants=docker.service network-online.target
+
+[Service]
+User=mkoniu
+Group=mkoniu
+SupplementaryGroups=docker
+WorkingDirectory=/home/mkoniu
+Environment=HOME=/home/mkoniu
+ExecStart=/home/mkoniu/.local/share/rig-tools/venv/bin/python /home/mkoniu/.config/llama-swap/tools/rig_tools.py --http --host 172.17.0.1 --port 8765
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target
